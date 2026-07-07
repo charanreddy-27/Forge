@@ -117,6 +117,34 @@ services:
       agent-layer:
         condition: service_healthy
 
+  run-monitor:
+    build: ./agent-layer
+    restart: unless-stopped
+    # Polls n8n executions, ingests runs, diagnoses new failures.
+    command: ["python", "-m", "forge.monitor.worker"]
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://forge:forge@postgres:5432/forge}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      N8N_BASE_URL: ${N8N_BASE_URL:-http://n8n:5678}
+      N8N_API_KEY: ${N8N_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-opus-4-8}
+      LLM_DAILY_BUDGET_USD: ${LLM_DAILY_BUDGET_USD:-10.00}
+      LLM_MAX_RETRIES: ${LLM_MAX_RETRIES:-3}
+      LLM_RETRY_BASE_DELAY_SECONDS: ${LLM_RETRY_BASE_DELAY_SECONDS:-2.0}
+      OLLAMA_ENABLED: ${OLLAMA_ENABLED:-false}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.1}
+      MONITOR_POLL_SECONDS: ${MONITOR_POLL_SECONDS:-60}
+      DIAGNOSTICIAN_AUTO_APPLY: ${DIAGNOSTICIAN_AUTO_APPLY:-true}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      n8n:
+        condition: service_healthy
+      agent-layer:
+        condition: service_healthy
+
 volumes:
   postgres_data:
   redis_data:

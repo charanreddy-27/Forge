@@ -5,12 +5,12 @@ attempt fails validation, the errors are fed back to the model once. Anything
 still invalid is returned as a failed result — never deployed.
 """
 
-import json
 import logging
 from dataclasses import dataclass
 from typing import Any
 
 from forge.generator.prompts import repair_prompt, system_prompt, user_prompt
+from forge.jsonutil import extract_json_object
 from forge.llm_gateway import LLMGateway
 from forge.validator import ValidationResult, validate_workflow
 
@@ -47,7 +47,7 @@ class WorkflowGenerator:
                 service=SERVICE_NAME,
                 purpose=f"generate workflow: {instruction[:120]}",
             )
-            definition, parse_error = _extract_json(response.text)
+            definition, parse_error = extract_json_object(response.text)
             if definition is None:
                 validation = ValidationResult(errors=[parse_error or "no JSON in response"])
             else:
@@ -65,22 +65,3 @@ class WorkflowGenerator:
             prompt = repair_prompt(instruction, name, validation.errors)
 
         return GenerationResult(definition, validation, self._max_attempts)
-
-
-def _extract_json(text: str) -> tuple[dict[str, Any] | None, str | None]:
-    """Pull the first JSON object out of the model's response.
-
-    Tolerates markdown fences and stray prose around the object — models drift
-    even when told not to, and rejecting salvageable output just wastes budget.
-    """
-    start = text.find("{")
-    end = text.rfind("}")
-    if start == -1 or end <= start:
-        return None, "response contained no JSON object"
-    try:
-        parsed = json.loads(text[start : end + 1])
-    except json.JSONDecodeError as exc:
-        return None, f"response was not valid JSON: {exc}"
-    if not isinstance(parsed, dict):
-        return None, "response JSON was not an object"
-    return parsed, None

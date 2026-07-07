@@ -11,6 +11,8 @@ from sqlalchemy import text
 
 from forge import __version__
 from forge.api.generation import router as generation_router
+from forge.api.incidents import router as incidents_router
+from forge.api.monitoring import router as monitoring_router
 from forge.api.workflows import router as workflows_router
 from forge.config import Settings, get_settings
 from forge.db.base import create_db_engine, create_session_factory
@@ -39,6 +41,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.settings = settings
     app.include_router(workflows_router)
     app.include_router(generation_router)
+    app.include_router(monitoring_router)
+    app.include_router(incidents_router)
 
     @app.get("/health")
     def health(request: Request) -> JSONResponse:

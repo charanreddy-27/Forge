@@ -135,3 +135,50 @@ Job statuses:
 | `failed` | Still invalid after the repair round — `result.validation.errors` lists why |
 
 Jobs expire from Redis after 24 hours; anything durable lives in the registry.
+
+## Runs, health & incidents (Phase 4)
+
+### `GET /workflows/{id}/runs` — execution history (newest first)
+
+```bash
+curl -s "localhost:8000/workflows/$ID/runs?limit=20" | jq '.[] | {status, started_at}'
+```
+
+### `GET /workflows/{id}/health` — computed health
+
+```bash
+curl -s localhost:8000/workflows/$ID/health | jq
+# {"status": "failing", "success_rate": 0.4, "consecutive_failures": 3, ...}
+```
+
+`status` is one of `healthy`, `degraded` (one recent failure or success rate < 0.8), `failing` (≥ 2 consecutive failures), `unknown` (no runs yet).
+
+### `POST /monitor/sync` — pull executions from the engine now
+
+The `run-monitor` service polls automatically; this forces a pass (sync only — diagnosis stays on the worker).
+
+```bash
+curl -s -X POST localhost:8000/monitor/sync | jq
+# {"newly_failed_runs": ["..."]}
+```
+
+### `GET /incidents` — incident feed
+
+```bash
+curl -s 'localhost:8000/incidents?status=awaiting_approval' | jq '.[] | {id, severity, summary}'
+```
+
+Filterable by `status`: `open`, `awaiting_approval`, `resolved`, `dismissed`.
+
+### `GET /incidents/{id}` — one incident (includes `root_cause` and `proposed_patch`)
+
+### `POST /incidents/{id}/approve` — apply the proposed patch
+
+Deploys the patch as a new workflow version (versioned + audited) and resolves the incident. `409` if the incident isn't awaiting approval.
+
+```bash
+curl -s -X POST localhost:8000/incidents/$ID/approve \
+  -H 'Content-Type: application/json' -d '{"actor": "human:me"}' | jq .status
+```
+
+### `POST /incidents/{id}/dismiss` — discard the patch, close the incident

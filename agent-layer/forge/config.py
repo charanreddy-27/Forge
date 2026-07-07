@@ -34,6 +34,11 @@ class Settings(BaseSettings):
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "llama3.1"
 
+    # Run monitor + diagnostician
+    monitor_poll_seconds: int = 60
+    # When False, even low-risk patches park as incidents for approval.
+    diagnostician_auto_apply: bool = True
+
 
 @lru_cache
 def get_settings() -> Settings:

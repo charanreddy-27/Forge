@@ -1,6 +1,6 @@
 # Forge Architecture
 
-> Phase 3 (Workflow generator agent). Update this document whenever a component changes.
+> Phase 4 (Run monitor + diagnostician). Update this document whenever a component changes.
 
 ## System diagram
 
@@ -16,8 +16,8 @@ flowchart LR
         GEN[workflow-generator]
         VAL[workflow-validator]
         WRK[generation worker]
-        MON[run-monitor*]
-        DIAG[diagnostician*]
+        MON[run-monitor]
+        DIAG[diagnostician]
         REG[workflow registry]
         EA[engine_adapter]
     end
@@ -38,7 +38,8 @@ flowchart LR
     API -->|202 + job_id| RD
     RD -->|BRPOP| WRK
     WRK --> GEN --> VAL
-    API --> MON & DIAG
+    MON -->|poll executions| EA
+    MON -->|new failures| DIAG
     GEN & DIAG -->|all LLM calls| GW
     GW -->|primary| LLM
     GW -.->|fallback| OLL
@@ -53,7 +54,6 @@ flowchart LR
     N8N -->|its own schema| PG
 ```
 
-\* Components marked with an asterisk arrive in Phase 4; the boxes exist now so the boundaries are designed in from day one.
 
 ## Component responsibilities
 
@@ -69,7 +69,8 @@ flowchart LR
 | **workflow-generator** | 3 | NL instruction → n8n workflow JSON via the LLM Gateway. Prompt is rendered from the node catalog (`forge/nodes.py`) with few-shot examples; one repair round feeds validator errors back to the model (ADR-003). |
 | **workflow-validator** | 3 | Static checks before anything touches the engine: schema, node whitelist, connection integrity, credential hygiene (no inline secrets), destructive-action detection. |
 | **generation worker** | 3 | Separate process (`generation-worker` compose service) consuming the Redis queue via BRPOP, so LLM latency never blocks the API. Destructive workflows park at `requires_approval` unless the request set `allow_destructive`. |
-| **run-monitor / diagnostician** | 4 | Ingest executions, compute health, root-cause failures, propose patches (risky ones need human approval). |
+| **run-monitor** | 4 | Separate process (`run-monitor` compose service) polling the engine every `MONITOR_POLL_SECONDS`; mirrors executions into `runs` (idempotent upsert by engine execution id) and computes per-workflow health (healthy / degraded / failing / unknown over the last 20 runs). |
+| **diagnostician** | 4 | On each newly failed run: root-cause analysis via the LLM Gateway → optional patch → static validation → risk rubric (ADR-004). LOW-risk patches auto-deploy through the registry (versioned backup + audit for free); HIGH-risk ones become `awaiting_approval` incidents with one-call approve/dismiss. Idempotent per run. |
 | **Dashboard (Next.js)** | 5 | Workflow list, run timeline, incident feed, LLM cost breakdown, chat box. |
 
 ## Data flow (Phase 1)

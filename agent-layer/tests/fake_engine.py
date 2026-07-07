@@ -71,6 +71,27 @@ class FakeEngineAdapter(EngineAdapter):
                     return execution
         raise EngineNotFoundError(execution_id)
 
+    def add_execution(
+        self,
+        engine_id: str,
+        execution_id: str,
+        status: str,
+        started_at: str = "2026-07-07T00:00:00Z",
+        finished_at: str | None = "2026-07-07T00:00:05Z",
+        data: dict[str, Any] | None = None,
+    ) -> EngineExecution:
+        """Test helper: record an execution the monitor will ingest."""
+        execution = EngineExecution(
+            id=execution_id,
+            workflow_id=engine_id,
+            status=status,
+            started_at=started_at,
+            finished_at=finished_at,
+            data=data or {"id": execution_id, "status": status},
+        )
+        self.executions.setdefault(engine_id, []).insert(0, execution)
+        return execution
+
     def _require(self, engine_id: str) -> None:
         if engine_id not in self.workflows:
             raise EngineNotFoundError(engine_id)

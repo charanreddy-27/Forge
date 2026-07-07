@@ -57,12 +57,45 @@ docker compose up -d
 ```bash
 docker compose logs -f agent-layer
 docker compose logs -f generation-worker
+docker compose logs -f run-monitor
 docker compose logs -f n8n
 ```
 
 **Generation jobs stuck in `queued`** — the worker isn't consuming. Check `docker compose ps generation-worker` and its logs; restart with `docker compose restart generation-worker`. Jobs stuck in `running` mean the worker died mid-job (state is in Redis with a 24h TTL) — re-submit the instruction.
 
 **Job landed in `requires_approval`** — the generated workflow contains destructive nodes (email/Slack/non-GET HTTP) and the request didn't set `allow_destructive`. Either re-submit with `"allow_destructive": true`, or take `result.definition` from the job and deploy it yourself via `POST /workflows`.
+
+## Failure handling (run monitor + diagnostician)
+
+The `run-monitor` service polls n8n every `MONITOR_POLL_SECONDS` (default 60), mirrors executions into the `runs` table, and hands each *newly failed* run to the diagnostician. The diagnostician's outcome is always an incident:
+
+| Incident state | Meaning | Your move |
+|---|---|---|
+| `resolved`, severity `low` | Patch was LOW-risk (ADR-004) and auto-applied as a new workflow version | Nothing — check `GET /workflows/{id}/versions` if curious; roll back with one call if the repair was wrong |
+| `awaiting_approval`, severity `high` | Patch proposed but HIGH-risk; **not** applied | Review `proposed_patch`, then `POST /incidents/{id}/approve` or `.../dismiss` |
+| `open` | No usable patch (external cause, or the patch failed validation) | Read `summary`/`root_cause`; fix externally or redeploy manually |
+
+Useful commands:
+
+```bash
+# What needs my attention?
+curl -s 'localhost:8000/incidents?status=awaiting_approval' | jq '.[] | {id, summary}'
+
+# Approve / dismiss a patch
+curl -s -X POST localhost:8000/incidents/$ID/approve -H 'Content-Type: application/json' -d '{"actor": "human:me"}'
+curl -s -X POST localhost:8000/incidents/$ID/dismiss
+
+# Check a workflow's health / recent runs
+curl -s localhost:8000/workflows/$WF/health | jq
+curl -s localhost:8000/workflows/$WF/runs | jq '.[0]'
+
+# Force an immediate sync instead of waiting for the poller
+curl -s -X POST localhost:8000/monitor/sync | jq
+```
+
+**Auto-repair applied a bad patch?** It's a normal version — `POST /workflows/{id}/rollback {"target_version": N}` undoes it, and the audit trail shows the diagnostician's deploy. Set `DIAGNOSTICIAN_AUTO_APPLY=false` to make every patch wait for approval.
+
+**Same failure keeps re-opening incidents?** Diagnosis is idempotent per run (one unresolved incident per run), but each *new* failed run gets its own diagnosis. Deactivate the workflow (`POST /workflows/{id}/deactivate`) while you investigate to stop the bleeding — and the LLM spend.
 
 **Health says "degraded"** — the JSON body tells you which dependency failed (`database` / `redis`). Check that container's logs and health status.
 
