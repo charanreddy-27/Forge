@@ -38,7 +38,7 @@ See [docs/architecture.md](docs/architecture.md) for the system diagram and data
 |---|---|---|
 | 1 — Foundation | Compose stack, DB schema + migrations, LLM Gateway (cost log + budget + retries + fallback) | ✅ |
 | 2 — Engine adapter + registry | n8n REST wrapper, versioned deploys, one-call rollback | ✅ |
-| 3 — Workflow generator | NL → validated workflow JSON as background jobs | ⏳ |
+| 3 — Workflow generator | NL → validated workflow JSON as background jobs | ✅ |
 | 4 — Run monitor + diagnostician | Health tracking, root-cause analysis, auto-repair with approval gates | ⏳ |
 | 5 — Dashboard | Next.js UI: workflows, runs, incidents, costs, chat | ⏳ |
 | 6 — Hardening & scale | Rate limits, backups, structured logging, load tests | ⏳ |

@@ -1,0 +1,69 @@
+{
+  "instruction": "Every hour, check that my site https://myapp.example.com/health returns OK, and email me if it doesn't.",
+  "fenced": true,
+  "prose_prefix": "Here is the workflow you asked for:",
+  "llm_workflow": {
+    "name": "hourly-health-check",
+    "nodes": [
+      {
+        "name": "Every Hour",
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "typeVersion": 1.2,
+        "position": [0, 0],
+        "parameters": {"rule": {"interval": [{"field": "hours"}]}}
+      },
+      {
+        "name": "Check Health",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [220, 0],
+        "parameters": {"url": "https://myapp.example.com/health", "method": "GET"}
+      },
+      {
+        "name": "Is Down",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [440, 0],
+        "parameters": {"conditions": {"conditions": []}}
+      },
+      {
+        "name": "Alert Me",
+        "type": "n8n-nodes-base.emailSend",
+        "typeVersion": 2,
+        "position": [660, -100],
+        "parameters": {"toEmail": "me@example.com", "subject": "Site is down!"},
+        "credentials": {"smtp": {"id": "1", "name": "SMTP account"}}
+      },
+      {
+        "name": "All Good",
+        "type": "n8n-nodes-base.noOp",
+        "typeVersion": 1,
+        "position": [660, 100],
+        "parameters": {}
+      }
+    ],
+    "connections": {
+      "Every Hour": {"main": [[{"node": "Check Health", "type": "main", "index": 0}]]},
+      "Check Health": {"main": [[{"node": "Is Down", "type": "main", "index": 0}]]},
+      "Is Down": {
+        "main": [
+          [{"node": "Alert Me", "type": "main", "index": 0}],
+          [{"node": "All Good", "type": "main", "index": 0}]
+        ]
+      }
+    },
+    "settings": {}
+  },
+  "expect": {
+    "valid": true,
+    "destructive": true,
+    "destructive_nodes": ["Alert Me"],
+    "node_types": [
+      "n8n-nodes-base.scheduleTrigger",
+      "n8n-nodes-base.httpRequest",
+      "n8n-nodes-base.if",
+      "n8n-nodes-base.emailSend",
+      "n8n-nodes-base.noOp"
+    ]
+  }
+}

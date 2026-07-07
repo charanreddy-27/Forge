@@ -10,6 +10,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
 from forge import __version__
+from forge.api.generation import router as generation_router
 from forge.api.workflows import router as workflows_router
 from forge.config import Settings, get_settings
 from forge.db.base import create_db_engine, create_session_factory
@@ -28,12 +29,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         # Tests replace this with a fake; nothing outside engine_adapter
         # may know the engine is n8n.
         app.state.engine_adapter = N8nAdapter(settings.n8n_base_url, settings.n8n_api_key)
+        # Shared connection pool for the generation job queue.
+        app.state.redis = redis.Redis.from_url(settings.redis_url, decode_responses=True)
         yield
         engine.dispose()
+        app.state.redis.close()
 
     app = FastAPI(title="Forge Agent Layer", version=__version__, lifespan=lifespan)
     app.state.settings = settings
     app.include_router(workflows_router)
+    app.include_router(generation_router)
 
     @app.get("/health")
     def health(request: Request) -> JSONResponse:

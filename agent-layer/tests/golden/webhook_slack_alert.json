@@ -1,0 +1,46 @@
+{
+  "instruction": "When my deploy webhook fires, post the payload summary to the #deploys Slack channel.",
+  "fenced": false,
+  "llm_workflow": {
+    "name": "deploy-slack-alert",
+    "nodes": [
+      {
+        "name": "Deploy Webhook",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2,
+        "position": [0, 0],
+        "parameters": {"path": "deploy-hook", "httpMethod": "POST"}
+      },
+      {
+        "name": "Summarize Payload",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [220, 0],
+        "parameters": {"assignments": {"assignments": []}}
+      },
+      {
+        "name": "Post To Slack",
+        "type": "n8n-nodes-base.slack",
+        "typeVersion": 2.2,
+        "position": [440, 0],
+        "parameters": {"channel": "#deploys", "text": "={{ $json.summary }}"},
+        "credentials": {"slackApi": {"id": "2", "name": "Slack workspace"}}
+      }
+    ],
+    "connections": {
+      "Deploy Webhook": {"main": [[{"node": "Summarize Payload", "type": "main", "index": 0}]]},
+      "Summarize Payload": {"main": [[{"node": "Post To Slack", "type": "main", "index": 0}]]}
+    },
+    "settings": {}
+  },
+  "expect": {
+    "valid": true,
+    "destructive": true,
+    "destructive_nodes": ["Post To Slack"],
+    "node_types": [
+      "n8n-nodes-base.webhook",
+      "n8n-nodes-base.set",
+      "n8n-nodes-base.slack"
+    ]
+  }
+}

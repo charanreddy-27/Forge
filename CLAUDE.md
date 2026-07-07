@@ -62,7 +62,7 @@ Not just workflow orchestration (n8n already does that). The differentiator: an 
 
 1. **Foundation** — monorepo, docker-compose (Postgres, Redis, n8n, FastAPI skeleton), DB models + migrations, LLM Gateway (Anthropic + cost logging + budget), architecture.md, ADR-001. ✅
 2. **Engine adapter + workflow registry** — n8n REST wrapper, versioned deploys, one-call rollback, ADR-002. ✅
-3. **Workflow generator agent** — NL → n8n JSON via gateway, validator, Redis-queued jobs, golden-file tests, ADR-003.
+3. **Workflow generator agent** — NL → n8n JSON via gateway, validator, Redis-queued jobs, golden-file tests, ADR-003. ✅
 4. **Run monitor + diagnostician** — execution ingest, health computation, root-cause analysis + patch proposals, risk rubric in ADR-004.
 5. **Dashboard** — Next.js UI: workflow list, run timeline, incident feed, cost chart, chat panel.
 6. **Hardening & scale** — rate limiting, backups, structured logging, load test, ADR-005.

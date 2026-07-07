@@ -99,3 +99,39 @@ Snapshots the engine's live definition as a `pre-delete backup` version first; r
 ```bash
 curl -s -X DELETE localhost:8000/workflows/$ID -o /dev/null -w '%{http_code}\n'
 ```
+
+## Workflow generation (Phase 3)
+
+Generation runs on the background worker via the Redis queue — the API returns immediately.
+
+### `POST /generate` — submit an instruction (202)
+
+```bash
+curl -s -X POST localhost:8000/generate \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "instruction": "Watch for ML job postings on my RSS feed every morning and email me a digest",
+    "deploy": true,
+    "allow_destructive": false
+  }' | jq
+# → {"job_id": "9f2c...", "status": "queued"}
+```
+
+Request fields: `instruction` (required), `name` (optional workflow name), `deploy` (deploy to the engine on success, default `false`), `allow_destructive` (approval flag for workflows with side-effect nodes, default `false`), `actor`.
+
+### `GET /generate/{job_id}` — poll the job
+
+```bash
+curl -s localhost:8000/generate/$JOB_ID | jq '{status, result: .result.validation}'
+```
+
+Job statuses:
+
+| Status | Meaning |
+|---|---|
+| `queued` / `running` | Waiting for / being processed by the worker |
+| `succeeded` | Valid definition; `result.workflow_id` present if `deploy` was set |
+| `requires_approval` | Valid but contains destructive nodes and `allow_destructive` was false — definition stored on the job, **not** deployed; `result.reason` explains |
+| `failed` | Still invalid after the repair round — `result.validation.errors` lists why |
+
+Jobs expire from Redis after 24 hours; anything durable lives in the registry.

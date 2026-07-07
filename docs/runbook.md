@@ -56,8 +56,13 @@ docker compose up -d
 
 ```bash
 docker compose logs -f agent-layer
+docker compose logs -f generation-worker
 docker compose logs -f n8n
 ```
+
+**Generation jobs stuck in `queued`** — the worker isn't consuming. Check `docker compose ps generation-worker` and its logs; restart with `docker compose restart generation-worker`. Jobs stuck in `running` mean the worker died mid-job (state is in Redis with a 24h TTL) — re-submit the instruction.
+
+**Job landed in `requires_approval`** — the generated workflow contains destructive nodes (email/Slack/non-GET HTTP) and the request didn't set `allow_destructive`. Either re-submit with `"allow_destructive": true`, or take `result.definition` from the job and deploy it yourself via `POST /workflows`.
 
 **Health says "degraded"** — the JSON body tells you which dependency failed (`database` / `redis`). Check that container's logs and health status.
 

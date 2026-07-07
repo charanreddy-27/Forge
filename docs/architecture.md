@@ -1,6 +1,6 @@
 # Forge Architecture
 
-> Phase 2 (Engine adapter + workflow registry). Update this document whenever a component changes.
+> Phase 3 (Workflow generator agent). Update this document whenever a component changes.
 
 ## System diagram
 
@@ -13,8 +13,9 @@ flowchart LR
     subgraph AgentLayer["Agent Layer (FastAPI, stateless)"]
         API[HTTP API]
         GW[LLM Gateway]
-        GEN[workflow-generator*]
-        VAL[workflow-validator*]
+        GEN[workflow-generator]
+        VAL[workflow-validator]
+        WRK[generation worker]
         MON[run-monitor*]
         DIAG[diagnostician*]
         REG[workflow registry]
@@ -34,13 +35,16 @@ flowchart LR
     OLL[Ollama fallback]
 
     DEV -->|HTTP| API
-    API --> GEN & VAL & MON & DIAG
+    API -->|202 + job_id| RD
+    RD -->|BRPOP| WRK
+    WRK --> GEN --> VAL
+    API --> MON & DIAG
     GEN & DIAG -->|all LLM calls| GW
     GW -->|primary| LLM
     GW -.->|fallback| OLL
     GW -->|call log + budget| PG
     API --> REG
-    GEN & VAL & MON & DIAG --> REG
+    WRK & MON & DIAG --> REG
     REG -->|versions + audit| PG
     REG --> EA
     EA -->|REST API only| N8N
@@ -49,7 +53,7 @@ flowchart LR
     N8N -->|its own schema| PG
 ```
 
-\* Components marked with an asterisk arrive in later phases (3–4); the boxes exist now so the boundaries are designed in from day one.
+\* Components marked with an asterisk arrive in Phase 4; the boxes exist now so the boundaries are designed in from day one.
 
 ## Component responsibilities
 
@@ -62,7 +66,9 @@ flowchart LR
 | **Redis** | 1 | Job queue (from Phase 3) and caching. AOF persistence on so queued jobs survive restarts. |
 | **engine_adapter** | 2 | The only module allowed to know the engine is n8n. Abstract `EngineAdapter` interface + `N8nAdapter` over `/api/v1`: create/update/get/delete/activate/deactivate workflows, fetch executions (statuses normalized to Forge's `RunStatus`). |
 | **workflow registry** | 2 | Versioned deploys: every deploy writes an immutable `workflow_versions` row in the same transaction as the engine call; one-call roll-forward rollback; deletes snapshot the live engine definition first; every action audited (ADR-002). |
-| **workflow-generator / validator** | 3 | NL instruction → validated n8n workflow JSON, as Redis-queued background jobs. |
+| **workflow-generator** | 3 | NL instruction → n8n workflow JSON via the LLM Gateway. Prompt is rendered from the node catalog (`forge/nodes.py`) with few-shot examples; one repair round feeds validator errors back to the model (ADR-003). |
+| **workflow-validator** | 3 | Static checks before anything touches the engine: schema, node whitelist, connection integrity, credential hygiene (no inline secrets), destructive-action detection. |
+| **generation worker** | 3 | Separate process (`generation-worker` compose service) consuming the Redis queue via BRPOP, so LLM latency never blocks the API. Destructive workflows park at `requires_approval` unless the request set `allow_destructive`. |
 | **run-monitor / diagnostician** | 4 | Ingest executions, compute health, root-cause failures, propose patches (risky ones need human approval). |
 | **Dashboard (Next.js)** | 5 | Workflow list, run timeline, incident feed, LLM cost breakdown, chat box. |
 

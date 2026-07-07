@@ -1,0 +1,33 @@
+{
+  "instruction": "Every night, run a shell script on my server to rotate the logs.",
+  "fenced": true,
+  "llm_workflow": {
+    "name": "nightly-log-rotate",
+    "nodes": [
+      {
+        "name": "Every Night",
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "typeVersion": 1.2,
+        "position": [0, 0],
+        "parameters": {"rule": {"interval": [{"field": "days"}]}}
+      },
+      {
+        "name": "Rotate Logs",
+        "type": "n8n-nodes-base.executeCommand",
+        "typeVersion": 1,
+        "position": [220, 0],
+        "parameters": {"command": "logrotate /etc/logrotate.conf"}
+      }
+    ],
+    "connections": {
+      "Every Night": {"main": [[{"node": "Rotate Logs", "type": "main", "index": 0}]]}
+    },
+    "settings": {}
+  },
+  "expect": {
+    "valid": false,
+    "destructive": false,
+    "destructive_nodes": [],
+    "error_contains": "not in the allowed node catalog"
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "instruction": "Watch for ML job postings on my RSS feed every morning and email me a digest.",
+  "fenced": true,
+  "llm_workflow": {
+    "name": "ml-jobs-digest",
+    "nodes": [
+      {
+        "name": "Every Morning",
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "typeVersion": 1.2,
+        "position": [0, 0],
+        "parameters": {"rule": {"interval": [{"field": "days"}]}}
+      },
+      {
+        "name": "Read Job Feed",
+        "type": "n8n-nodes-base.rssFeedRead",
+        "typeVersion": 1,
+        "position": [220, 0],
+        "parameters": {"url": "https://example.com/ml-jobs.rss"}
+      },
+      {
+        "name": "Email Digest",
+        "type": "n8n-nodes-base.emailSend",
+        "typeVersion": 2,
+        "position": [440, 0],
+        "parameters": {"toEmail": "me@example.com", "subject": "ML jobs digest"},
+        "credentials": {"smtp": {"id": "1", "name": "SMTP account"}}
+      }
+    ],
+    "connections": {
+      "Every Morning": {"main": [[{"node": "Read Job Feed", "type": "main", "index": 0}]]},
+      "Read Job Feed": {"main": [[{"node": "Email Digest", "type": "main", "index": 0}]]}
+    },
+    "settings": {}
+  },
+  "expect": {
+    "valid": true,
+    "destructive": true,
+    "destructive_nodes": ["Email Digest"],
+    "node_types": [
+      "n8n-nodes-base.scheduleTrigger",
+      "n8n-nodes-base.rssFeedRead",
+      "n8n-nodes-base.emailSend"
+    ]
+  }
+}

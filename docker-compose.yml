@@ -90,6 +90,33 @@ services:
       timeout: 5s
       retries: 10
 
+  generation-worker:
+    build: ./agent-layer
+    restart: unless-stopped
+    # Same image as agent-layer; runs the queue consumer instead of the API.
+    command: ["python", "-m", "forge.jobs.worker"]
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://forge:forge@postgres:5432/forge}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      N8N_BASE_URL: ${N8N_BASE_URL:-http://n8n:5678}
+      N8N_API_KEY: ${N8N_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-opus-4-8}
+      LLM_DAILY_BUDGET_USD: ${LLM_DAILY_BUDGET_USD:-10.00}
+      LLM_MAX_RETRIES: ${LLM_MAX_RETRIES:-3}
+      LLM_RETRY_BASE_DELAY_SECONDS: ${LLM_RETRY_BASE_DELAY_SECONDS:-2.0}
+      OLLAMA_ENABLED: ${OLLAMA_ENABLED:-false}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.1}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      # Migrations run in the agent-layer container; the worker waits for it.
+      agent-layer:
+        condition: service_healthy
+
 volumes:
   postgres_data:
   redis_data:

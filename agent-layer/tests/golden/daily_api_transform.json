@@ -1,0 +1,47 @@
+{
+  "instruction": "Once a day, pull the items from https://api.example.com/items and reshape them into {id, title, price}.",
+  "fenced": false,
+  "llm_workflow": {
+    "name": "daily-items-transform",
+    "nodes": [
+      {
+        "name": "Every Day",
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "typeVersion": 1.2,
+        "position": [0, 0],
+        "parameters": {"rule": {"interval": [{"field": "days"}]}}
+      },
+      {
+        "name": "Fetch Items",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [220, 0],
+        "parameters": {"url": "https://api.example.com/items", "method": "GET"}
+      },
+      {
+        "name": "Reshape",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [440, 0],
+        "parameters": {
+          "jsCode": "return items.map(i => ({json: {id: i.json.id, title: i.json.title, price: i.json.price}}));"
+        }
+      }
+    ],
+    "connections": {
+      "Every Day": {"main": [[{"node": "Fetch Items", "type": "main", "index": 0}]]},
+      "Fetch Items": {"main": [[{"node": "Reshape", "type": "main", "index": 0}]]}
+    },
+    "settings": {}
+  },
+  "expect": {
+    "valid": true,
+    "destructive": false,
+    "destructive_nodes": [],
+    "node_types": [
+      "n8n-nodes-base.scheduleTrigger",
+      "n8n-nodes-base.httpRequest",
+      "n8n-nodes-base.code"
+    ]
+  }
+}
