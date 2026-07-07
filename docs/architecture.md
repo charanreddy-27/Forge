@@ -1,6 +1,6 @@
 # Forge Architecture
 
-> Phase 1 (Foundation). Update this document whenever a component changes.
+> Phase 2 (Engine adapter + workflow registry). Update this document whenever a component changes.
 
 ## System diagram
 
@@ -17,7 +17,8 @@ flowchart LR
         VAL[workflow-validator*]
         MON[run-monitor*]
         DIAG[diagnostician*]
-        EA[engine_adapter*]
+        REG[workflow registry]
+        EA[engine_adapter]
     end
 
     subgraph Data["Data Layer"]
@@ -38,25 +39,29 @@ flowchart LR
     GW -->|primary| LLM
     GW -.->|fallback| OLL
     GW -->|call log + budget| PG
-    GEN & VAL & MON & DIAG --> EA
+    API --> REG
+    GEN & VAL & MON & DIAG --> REG
+    REG -->|versions + audit| PG
+    REG --> EA
     EA -->|REST API only| N8N
     AgentLayer -->|state| PG
     AgentLayer -->|job queue| RD
     N8N -->|its own schema| PG
 ```
 
-\* Components marked with an asterisk arrive in later phases (2–4); the boxes exist now so the boundaries are designed in from day one.
+\* Components marked with an asterisk arrive in later phases (3–4); the boxes exist now so the boundaries are designed in from day one.
 
 ## Component responsibilities
 
 | Component | Phase | Responsibility |
 |---|---|---|
 | **n8n** | 1 | Executes workflows. Managed exclusively through its public REST API — never hand-edited in the UI. Swappable: nothing outside `engine_adapter` may know it's n8n. |
-| **Agent layer (FastAPI)** | 1 | Stateless brain. All state lives in Postgres/Redis so instances can scale horizontally. Currently exposes `/health`. |
+| **Agent layer (FastAPI)** | 1 | Stateless brain. All state lives in Postgres/Redis so instances can scale horizontally. Exposes `/health` and the `/workflows` registry API. |
 | **LLM Gateway** | 1 | The single choke point for every LLM call. Logs model, tokens, cost, purpose, and latency to `llm_calls`; enforces the daily budget as a hard stop; retries transient Anthropic errors with exponential backoff; falls back to Ollama when enabled. |
 | **PostgreSQL** | 1 | Workflow registry (versioned), runs, incidents, LLM call log, audit trail. n8n also stores its own state here, in a separate `n8n` schema. |
 | **Redis** | 1 | Job queue (from Phase 3) and caching. AOF persistence on so queued jobs survive restarts. |
-| **engine_adapter** | 2 | Wraps n8n's REST API: create/update/activate/deactivate/delete workflows, fetch executions. |
+| **engine_adapter** | 2 | The only module allowed to know the engine is n8n. Abstract `EngineAdapter` interface + `N8nAdapter` over `/api/v1`: create/update/get/delete/activate/deactivate workflows, fetch executions (statuses normalized to Forge's `RunStatus`). |
+| **workflow registry** | 2 | Versioned deploys: every deploy writes an immutable `workflow_versions` row in the same transaction as the engine call; one-call roll-forward rollback; deletes snapshot the live engine definition first; every action audited (ADR-002). |
 | **workflow-generator / validator** | 3 | NL instruction → validated n8n workflow JSON, as Redis-queued background jobs. |
 | **run-monitor / diagnostician** | 4 | Ingest executions, compute health, root-cause failures, propose patches (risky ones need human approval). |
 | **Dashboard (Next.js)** | 5 | Workflow list, run timeline, incident feed, LLM cost breakdown, chat box. |

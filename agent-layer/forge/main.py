@@ -10,8 +10,10 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
 from forge import __version__
+from forge.api.workflows import router as workflows_router
 from forge.config import Settings, get_settings
 from forge.db.base import create_db_engine, create_session_factory
+from forge.engine_adapter import N8nAdapter
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -23,11 +25,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         engine = create_db_engine(settings.database_url)
         app.state.engine = engine
         app.state.session_factory = create_session_factory(engine)
+        # Tests replace this with a fake; nothing outside engine_adapter
+        # may know the engine is n8n.
+        app.state.engine_adapter = N8nAdapter(settings.n8n_base_url, settings.n8n_api_key)
         yield
         engine.dispose()
 
     app = FastAPI(title="Forge Agent Layer", version=__version__, lifespan=lifespan)
     app.state.settings = settings
+    app.include_router(workflows_router)
 
     @app.get("/health")
     def health(request: Request) -> JSONResponse:
