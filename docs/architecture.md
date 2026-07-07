@@ -1,6 +1,6 @@
 # Forge Architecture
 
-> Phase 4 (Run monitor + diagnostician). Update this document whenever a component changes.
+> Phase 5 (Dashboard). Update this document whenever a component changes.
 
 ## System diagram
 
@@ -71,7 +71,7 @@ flowchart LR
 | **generation worker** | 3 | Separate process (`generation-worker` compose service) consuming the Redis queue via BRPOP, so LLM latency never blocks the API. Destructive workflows park at `requires_approval` unless the request set `allow_destructive`. |
 | **run-monitor** | 4 | Separate process (`run-monitor` compose service) polling the engine every `MONITOR_POLL_SECONDS`; mirrors executions into `runs` (idempotent upsert by engine execution id) and computes per-workflow health (healthy / degraded / failing / unknown over the last 20 runs). |
 | **diagnostician** | 4 | On each newly failed run: root-cause analysis via the LLM Gateway → optional patch → static validation → risk rubric (ADR-004). LOW-risk patches auto-deploy through the registry (versioned backup + audit for free); HIGH-risk ones become `awaiting_approval` incidents with one-call approve/dismiss. Idempotent per run. |
-| **Dashboard (Next.js)** | 5 | Workflow list, run timeline, incident feed, LLM cost breakdown, chat box. |
+| **Dashboard (Next.js 14)** | 5 | Server components read the agent-layer API directly (`FORGE_API_URL`); browser interactions (chat, approve/dismiss) go through a `/api/forge/[...path]` proxy route, so there's no CORS config and no build-time API URLs. Pages: overview (workflow list + health badges + chat panel), workflow detail (run timeline + version log), incidents (approve/dismiss patches), costs (budget bar + pure-Tailwind daily chart + per-service table). |
 
 ## Data flow (Phase 1)
 

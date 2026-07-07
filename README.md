@@ -23,8 +23,27 @@ docker compose up -d
 
 That's it. Then:
 
+- Dashboard: http://localhost:3000
 - Agent layer API: http://localhost:8000 (docs at `/docs`, health at `/health`)
 - n8n UI: http://localhost:5678
+
+## Screenshots
+
+**Overview** — workflow list with health badges, live budget, and the chat box that drives the generator:
+
+![Overview](docs/screenshots/overview.png)
+
+**Incidents** — the diagnostician's feed; high-risk patches wait here for one-click approval:
+
+![Incidents](docs/screenshots/incidents.png)
+
+**Run timeline** — per-workflow execution history and version log (who deployed what, including auto-repairs):
+
+![Workflow detail](docs/screenshots/workflow-detail.png)
+
+**Costs** — daily LLM spend against the hard budget, broken down by agent service:
+
+![Costs](docs/screenshots/costs.png)
 
 ## Architecture
 
@@ -40,7 +59,7 @@ See [docs/architecture.md](docs/architecture.md) for the system diagram and data
 | 2 — Engine adapter + registry | n8n REST wrapper, versioned deploys, one-call rollback | ✅ |
 | 3 — Workflow generator | NL → validated workflow JSON as background jobs | ✅ |
 | 4 — Run monitor + diagnostician | Health tracking, root-cause analysis, auto-repair with approval gates | ✅ |
-| 5 — Dashboard | Next.js UI: workflows, runs, incidents, costs, chat | ⏳ |
+| 5 — Dashboard | Next.js UI: workflows, runs, incidents, costs, chat | ✅ |
 | 6 — Hardening & scale | Rate limits, backups, structured logging, load tests | ⏳ |
 
 ## Development

@@ -182,3 +182,13 @@ curl -s -X POST localhost:8000/incidents/$ID/approve \
 ```
 
 ### `POST /incidents/{id}/dismiss` — discard the patch, close the incident
+
+## Costs (Phase 5)
+
+### `GET /costs/summary?days=14` — LLM spend for the dashboard
+
+```bash
+curl -s 'localhost:8000/costs/summary?days=14' | jq '{spend_today_usd, budget_usd, by_service}'
+```
+
+Returns today's spend vs the hard budget, per-day totals (`daily`), and per-service totals (`by_service`) over the window (1–90 days).

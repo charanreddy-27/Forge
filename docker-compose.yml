@@ -145,6 +145,18 @@ services:
       agent-layer:
         condition: service_healthy
 
+  dashboard:
+    build: ./dashboard
+    restart: unless-stopped
+    environment:
+      # Server components + the /api/forge proxy talk to the agent layer here.
+      FORGE_API_URL: http://agent-layer:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      agent-layer:
+        condition: service_healthy
+
 volumes:
   postgres_data:
   redis_data:

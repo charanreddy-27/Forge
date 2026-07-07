@@ -10,6 +10,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
 from forge import __version__
+from forge.api.costs import router as costs_router
 from forge.api.generation import router as generation_router
 from forge.api.incidents import router as incidents_router
 from forge.api.monitoring import router as monitoring_router
@@ -43,6 +44,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(generation_router)
     app.include_router(monitoring_router)
     app.include_router(incidents_router)
+    app.include_router(costs_router)
 
     @app.get("/health")
     def health(request: Request) -> JSONResponse:
