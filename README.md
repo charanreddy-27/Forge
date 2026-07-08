@@ -47,7 +47,7 @@ That's it. Then:
 
 ## Architecture
 
-Postgres 16 (state) · Redis 7 (job queue) · n8n (execution engine) · FastAPI agent layer (stateless brain) · Next.js dashboard (coming in Phase 5).
+Postgres 16 (state) · Redis 7 (job queue) · n8n (execution engine) · FastAPI agent layer (stateless brain) · Next.js dashboard.
 
 See [docs/architecture.md](docs/architecture.md) for the system diagram and data flow, [docs/adr/](docs/adr/) for design decisions, [docs/runbook.md](docs/runbook.md) for operations, and [docs/api.md](docs/api.md) for the API reference.
 

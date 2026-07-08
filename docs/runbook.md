@@ -149,3 +149,7 @@ python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"
 .venv/bin/pytest -q
 .venv/bin/ruff check forge tests && .venv/bin/black --check forge tests && .venv/bin/mypy forge
 ```
+
+## Known issues
+
+- **`next@14.2.35` (dashboard) has open advisories** — `npm audit` (run from `dashboard/`) flags several Next.js 14 DoS/cache-poisoning CVEs. The fix is only published for the `next@16` major, which changes the App Router APIs enough to need its own testing pass; it hasn't been done yet. Since the dashboard isn't exposed outside the operator's own network, this is a scheduled upgrade rather than an urgent patch — re-run `npm audit` in `dashboard/` before exposing it any more broadly.

@@ -1,0 +1,10 @@
+# Normalize line endings to LF in the repo regardless of platform checkout
+# settings. Without this, Windows checkouts with core.autocrlf=true convert
+# committed LF files to CRLF locally, which makes `black --check` and `git
+# diff` report spurious whole-file changes that aren't really there.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ico binary

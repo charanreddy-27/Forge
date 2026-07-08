@@ -17,6 +17,7 @@ build/
 # Node (dashboard, later phases)
 node_modules/
 .next/
+*.tsbuildinfo
 
 # Docker volumes / local data
 data/

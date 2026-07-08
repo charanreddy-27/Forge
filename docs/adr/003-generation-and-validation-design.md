@@ -27,6 +27,6 @@ Generation runs on a separate worker process (`python -m forge.jobs.worker`, the
 - ✅ LLM output is data, validated before it can touch the engine; the catalog bounds the blast radius of a bad generation.
 - ✅ API stays fast: `POST /generate` returns 202 in milliseconds regardless of LLM latency; workers scale horizontally (BRPOP distributes jobs).
 - ✅ Golden-file tests (`tests/golden/`) pin instruction → structure behavior; adding a case is adding a JSON file.
-- ⚠️ The catalog is deliberately small (14 node types). Instructions needing other nodes will fail validation until the catalog grows — that's the intended control point, not a bug.
+- ⚠️ The catalog is deliberately small (15 node types). Instructions needing other nodes will fail validation until the catalog grows — that's the intended control point, not a bug.
 - ⚠️ A job crash after BRPOP but before the result write loses the in-flight job (visible as stuck `running`). Acceptable for personal-platform scale; revisit with a reliable-queue pattern (BRPOPLPUSH + janitor) in Phase 6 if needed.
 - ⚠️ Job state expires after 24h; results that matter must be deployed (Postgres) or re-generated.

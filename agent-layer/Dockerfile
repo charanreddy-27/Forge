@@ -14,6 +14,9 @@ RUN pip install --no-cache-dir .
 COPY alembic.ini ./
 COPY alembic ./alembic
 
+RUN useradd --create-home --uid 1000 forge && chown -R forge:forge /app
+USER forge
+
 EXPOSE 8000
 
 CMD ["sh", "-c", "alembic upgrade head && uvicorn forge.main:app --host 0.0.0.0 --port 8000"]
