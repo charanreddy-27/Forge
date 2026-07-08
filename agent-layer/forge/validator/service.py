@@ -111,7 +111,9 @@ def _check_nodes(nodes: list[Any], result: ValidationResult) -> set[str]:
     return seen
 
 
-def _check_credentials(node: dict[str, Any], node_name: str, result: ValidationResult) -> None:
+def _check_credentials(
+    node: dict[str, Any], node_name: str, result: ValidationResult
+) -> None:
     credentials = node.get("credentials")
     if credentials is None:
         return
@@ -119,18 +121,27 @@ def _check_credentials(node: dict[str, Any], node_name: str, result: ValidationR
         result.errors.append(f"node {node_name!r}: 'credentials' must be an object")
         return
     for cred_type, reference in credentials.items():
-        if not isinstance(reference, dict) or not set(reference) <= _ALLOWED_CREDENTIAL_KEYS:
+        if (
+            not isinstance(reference, dict)
+            or not set(reference) <= _ALLOWED_CREDENTIAL_KEYS
+        ):
             result.errors.append(
                 f"node {node_name!r}: credential {cred_type!r} must be a reference "
                 'like {"id": ..., "name": ...} — never inline secret material'
             )
 
 
-def _scan_for_inline_secrets(value: Any, node_name: str, result: ValidationResult) -> None:
+def _scan_for_inline_secrets(
+    value: Any, node_name: str, result: ValidationResult
+) -> None:
     """Recursively reject parameter keys that look like literal secrets."""
     if isinstance(value, dict):
         for key, child in value.items():
-            if _SECRET_KEY_RE.search(str(key)) and isinstance(child, str) and child.strip():
+            if (
+                _SECRET_KEY_RE.search(str(key))
+                and isinstance(child, str)
+                and child.strip()
+            ):
                 result.errors.append(
                     f"node {node_name!r}: parameter {key!r} looks like an inline secret — "
                     "use an n8n credential reference instead"
@@ -146,7 +157,9 @@ def _check_connections(
 ) -> None:
     for source, outputs in connections.items():
         if source not in node_names:
-            result.errors.append(f"connections reference unknown source node {source!r}")
+            result.errors.append(
+                f"connections reference unknown source node {source!r}"
+            )
         if not isinstance(outputs, dict):
             result.errors.append(f"connections[{source!r}] must be an object")
             continue

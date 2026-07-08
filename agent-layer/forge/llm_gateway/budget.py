@@ -18,7 +18,9 @@ def spend_today_usd(session: Session) -> Decimal:
     """Sum of logged LLM cost since UTC midnight."""
     day_start = datetime.combine(datetime.now(UTC).date(), time.min, tzinfo=UTC)
     total = session.execute(
-        select(func.coalesce(func.sum(LLMCall.cost_usd), 0)).where(LLMCall.created_at >= day_start)
+        select(func.coalesce(func.sum(LLMCall.cost_usd), 0)).where(
+            LLMCall.created_at >= day_start
+        )
     ).scalar_one()
     return Decimal(total)
 

@@ -1,6 +1,6 @@
 # Forge Architecture
 
-> Phase 5 (Dashboard). Update this document whenever a component changes.
+> Phase 6 (Hardening & scale). Update this document whenever a component changes.
 
 ## System diagram
 
@@ -138,9 +138,15 @@ erDiagram
 
 `llm_calls` and `audit_log` are standalone append-only tables (no FKs) so they can never block a workflow delete and are cheap to partition later.
 
-## Scalability posture
+## Scalability posture & horizontal scaling
 
-- **Stateless services** — the agent layer holds no in-process state; kill/scale at will.
-- **Budget without coordination** — enforced from the shared `llm_calls` table, not per-instance counters.
-- **Engine swappability** — `engine_workflow_id` / `engine_execution_id` are generic strings; only `engine_adapter` (Phase 2) will speak n8n.
+- **Stateless services** — the API, generation worker, and run monitor hold no in-process state. Scale with plain compose:
+  ```bash
+  docker compose up -d --scale agent-layer=3 --scale generation-worker=4
+  ```
+  BRPOP delivers each queued job to exactly one worker; run ingest and diagnosis are idempotent (upsert by engine execution id, one unresolved incident per run), so overlapping monitor instances converge instead of duplicating work.
+- **Budget & rate limits without coordination** — both are computed from the shared `llm_calls` table (`budget.py`, `ratelimit.py`), so N gateway instances enforce one daily budget and one per-service calls/minute ceiling. Gateway refusals are logged with a `refused:` error prefix and excluded from the rate window.
+- **Engine swappability** — `engine_workflow_id` / `engine_execution_id` are generic strings; only `engine_adapter` speaks n8n. n8n's own queue mode is a compose-only change when engine throughput matters.
 - **Migrations on boot** — the agent-layer container runs `alembic upgrade head` before starting, so `docker compose up` is always schema-correct.
+- **Structured logs** — every Python process emits one JSON object per line on stdout (`forge/logsetup.py`, `LOG_FORMAT=json|text`), ready for any container log pipeline.
+- **Measured, not guessed** — `loadtest/locustfile.py` (locust) replays dashboard-shaped read traffic and opt-in generation submissions; run it before and after scaling changes. The ordered growth path (more workers → PgBouncer → counters to Redis → table partitioning → n8n queue mode) is ADR-005.

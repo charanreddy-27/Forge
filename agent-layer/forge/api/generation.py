@@ -59,5 +59,7 @@ def submit_generation(body: GenerateRequest, queue: JobQueue = Queue) -> JobAcce
 def get_generation_job(job_id: str, queue: JobQueue = Queue) -> JobOut:
     job = queue.get(job_id)
     if job is None:
-        raise HTTPException(status_code=404, detail=f"no job {job_id} (jobs expire after 24h)")
+        raise HTTPException(
+            status_code=404, detail=f"no job {job_id} (jobs expire after 24h)"
+        )
     return JobOut(**job)

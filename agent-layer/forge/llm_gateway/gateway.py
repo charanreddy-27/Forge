@@ -21,8 +21,13 @@ from sqlalchemy.orm import sessionmaker
 from forge.config import Settings
 from forge.db.models import LLMCall
 from forge.llm_gateway.budget import budget_exhausted
-from forge.llm_gateway.errors import BudgetExceededError, LLMUnavailableError
+from forge.llm_gateway.errors import (
+    BudgetExceededError,
+    LLMUnavailableError,
+    RateLimitedError,
+)
 from forge.llm_gateway.pricing import cost_usd
+from forge.llm_gateway.ratelimit import rate_limited
 
 logger = logging.getLogger(__name__)
 
@@ -98,11 +103,25 @@ class LLMGateway:
                     service=service,
                     purpose=purpose,
                     success=False,
-                    error="daily budget exceeded",
+                    error="refused: daily budget exceeded",
                 )
                 raise BudgetExceededError(
                     f"Daily LLM budget of ${self._settings.llm_daily_budget_usd} reached; "
                     "call refused."
+                )
+            per_minute = self._settings.llm_rate_limit_per_minute
+            if rate_limited(session, service, per_minute):
+                self._log_call(
+                    provider="anthropic",
+                    model=model,
+                    service=service,
+                    purpose=purpose,
+                    success=False,
+                    error=f"refused: rate limit ({per_minute}/min) for service {service}",
+                )
+                raise RateLimitedError(
+                    f"Service {service!r} exceeded {per_minute} LLM calls/minute; "
+                    "retry after backing off."
                 )
 
         try:
@@ -120,7 +139,9 @@ class LLMGateway:
                     error=str(anthropic_error),
                 )
                 raise
-            logger.warning("Anthropic unavailable, falling back to Ollama: %s", anthropic_error)
+            logger.warning(
+                "Anthropic unavailable, falling back to Ollama: %s", anthropic_error
+            )
             try:
                 response = self._call_ollama(prompt=prompt, system=system)
             except LLMUnavailableError as ollama_error:
@@ -154,7 +175,9 @@ class LLMGateway:
         for attempt in range(self._settings.llm_max_retries + 1):
             if attempt > 0:
                 # 2s, 4s, 8s, ... — cheap insurance against rate limits and blips.
-                self._sleep(self._settings.llm_retry_base_delay_seconds * 2 ** (attempt - 1))
+                self._sleep(
+                    self._settings.llm_retry_base_delay_seconds * 2 ** (attempt - 1)
+                )
             started = time.monotonic()
             try:
                 if system is not None:
@@ -179,17 +202,23 @@ class LLMGateway:
                     continue
                 # 4xx (except 429) means the request itself is wrong — retrying
                 # would just burn budget.
-                raise LLMUnavailableError(f"Anthropic rejected the request: {exc}") from exc
+                raise LLMUnavailableError(
+                    f"Anthropic rejected the request: {exc}"
+                ) from exc
 
             latency_ms = int((time.monotonic() - started) * 1000)
-            text = "".join(block.text for block in message.content if block.type == "text")
+            text = "".join(
+                block.text for block in message.content if block.type == "text"
+            )
             return LLMResponse(
                 text=text,
                 provider="anthropic",
                 model=model,
                 input_tokens=message.usage.input_tokens,
                 output_tokens=message.usage.output_tokens,
-                cost_usd=cost_usd(model, message.usage.input_tokens, message.usage.output_tokens),
+                cost_usd=cost_usd(
+                    model, message.usage.input_tokens, message.usage.output_tokens
+                ),
                 latency_ms=latency_ms,
             )
 

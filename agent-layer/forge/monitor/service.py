@@ -57,7 +57,9 @@ class RunMonitor:
             if workflow is None or workflow.engine_workflow_id is None:
                 return []
 
-            executions = self._adapter.list_executions(workflow.engine_workflow_id, limit=limit)
+            executions = self._adapter.list_executions(
+                workflow.engine_workflow_id, limit=limit
+            )
             newly_failed = [
                 run
                 for execution in executions
@@ -72,7 +74,9 @@ class RunMonitor:
         """Sync every deployed workflow; returns all newly failed runs."""
         with self._session_factory() as session:
             workflow_ids = (
-                session.execute(select(Workflow.id).where(Workflow.engine_workflow_id.is_not(None)))
+                session.execute(
+                    select(Workflow.id).where(Workflow.engine_workflow_id.is_not(None))
+                )
                 .scalars()
                 .all()
             )
@@ -109,7 +113,9 @@ class RunMonitor:
 
         if consecutive_failures >= 2:
             status = "failing"
-        elif consecutive_failures == 1 or (success_rate is not None and success_rate < 0.8):
+        elif consecutive_failures == 1 or (
+            success_rate is not None and success_rate < 0.8
+        ):
             status = "degraded"
         elif finished:
             status = "healthy"

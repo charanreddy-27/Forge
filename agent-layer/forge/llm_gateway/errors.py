@@ -15,3 +15,11 @@ class BudgetExceededError(LLMGatewayError):
 
 class LLMUnavailableError(LLMGatewayError):
     """Raised when Anthropic failed after all retries and no fallback succeeded."""
+
+
+class RateLimitedError(LLMGatewayError):
+    """Raised when a service exceeded its per-minute call limit.
+
+    Unlike the budget hard stop, this clears on its own — callers may retry
+    after backing off (the window is 60 seconds).
+    """

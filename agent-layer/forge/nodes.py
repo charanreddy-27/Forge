@@ -134,7 +134,9 @@ CATALOG: tuple[NodeTemplate, ...] = (
 )
 
 ALLOWED_TYPES: frozenset[str] = frozenset(t.type for t in CATALOG)
-_ALWAYS_DESTRUCTIVE: frozenset[str] = frozenset(t.type for t in CATALOG if t.destructive)
+_ALWAYS_DESTRUCTIVE: frozenset[str] = frozenset(
+    t.type for t in CATALOG if t.destructive
+)
 
 # HTTP methods that only read; anything else mutates the remote system.
 _SAFE_HTTP_METHODS = {"GET", "HEAD", ""}

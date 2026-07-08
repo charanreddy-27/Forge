@@ -19,7 +19,9 @@ class GenerationJobHandler:
     - failed               invalid after the repair attempt
     """
 
-    def __init__(self, generator: WorkflowGenerator, registry: WorkflowRegistry) -> None:
+    def __init__(
+        self, generator: WorkflowGenerator, registry: WorkflowRegistry
+    ) -> None:
         self._generator = generator
         self._registry = registry
 
@@ -40,7 +42,9 @@ class GenerationJobHandler:
             return "failed", result
 
         assert outcome.definition is not None  # narrowed by outcome.ok
-        if outcome.validation.destructive and not payload.get("allow_destructive", False):
+        if outcome.validation.destructive and not payload.get(
+            "allow_destructive", False
+        ):
             # CLAUDE.md: no destructive actions without an approval flag.
             result["reason"] = (
                 "workflow contains destructive nodes "

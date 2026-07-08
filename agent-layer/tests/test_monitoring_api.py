@@ -12,7 +12,9 @@ from tests.fake_gateway import FakeGateway
 
 DEFINITION = {
     "name": "digest",
-    "nodes": [{"name": "Cron", "type": "n8n-nodes-base.scheduleTrigger", "parameters": {}}],
+    "nodes": [
+        {"name": "Cron", "type": "n8n-nodes-base.scheduleTrigger", "parameters": {}}
+    ],
     "connections": {},
     "settings": {},
 }
@@ -20,7 +22,13 @@ DEFINITION = {
 HIGH_RISK_PATCH = {
     **DEFINITION,
     "nodes": DEFINITION["nodes"]
-    + [{"name": "Slack", "type": "n8n-nodes-base.slack", "parameters": {"channel": "#x"}}],
+    + [
+        {
+            "name": "Slack",
+            "type": "n8n-nodes-base.slack",
+            "parameters": {"channel": "#x"},
+        }
+    ],
 }
 
 
@@ -31,15 +39,20 @@ def client(settings, session_factory, monkeypatch):
         app.state.session_factory = session_factory
         app.state.engine_adapter = FakeEngineAdapter()
         # Incidents endpoints build a gateway; keep the real class out of tests.
-        analysis = json.dumps({"summary": "s", "root_cause": "r", "patch": HIGH_RISK_PATCH})
+        analysis = json.dumps(
+            {"summary": "s", "root_cause": "r", "patch": HIGH_RISK_PATCH}
+        )
         monkeypatch.setattr(
-            "forge.api.incidents.LLMGateway", lambda *args, **kwargs: FakeGateway([analysis])
+            "forge.api.incidents.LLMGateway",
+            lambda *args, **kwargs: FakeGateway([analysis]),
         )
         yield test_client
 
 
 def deploy_and_fail_run(client) -> tuple[str, str]:
-    workflow = client.post("/workflows", json={"name": "digest", "definition": DEFINITION}).json()
+    workflow = client.post(
+        "/workflows", json={"name": "digest", "definition": DEFINITION}
+    ).json()
     engine: FakeEngineAdapter = client.app.state.engine_adapter
     engine.add_execution(workflow["engine_workflow_id"], "ex-1", "failed")
     sync = client.post("/monitor/sync").json()
@@ -77,14 +90,18 @@ def test_incident_approve_flow_over_http(client, session_factory):
     incident_id = incidents[0]["id"]
     assert incidents[0]["proposed_patch"] is not None
 
-    approved = client.post(f"/incidents/{incident_id}/approve", json={"actor": "human:me"})
+    approved = client.post(
+        f"/incidents/{incident_id}/approve", json={"actor": "human:me"}
+    )
     assert approved.status_code == 200
     assert approved.json()["status"] == "resolved"
     assert client.get(f"/workflows/{workflow_id}").json()["current_version"] == 2
 
     # Approving twice conflicts.
     assert (
-        client.post(f"/incidents/{incident_id}/approve", json={"actor": "human:me"}).status_code
+        client.post(
+            f"/incidents/{incident_id}/approve", json={"actor": "human:me"}
+        ).status_code
         == 409
     )
 

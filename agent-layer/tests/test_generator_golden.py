@@ -51,7 +51,9 @@ def test_golden_case(path: Path):
         assert not result.ok
         # Invalid output triggers exactly one repair round before giving up.
         assert result.attempts == 2
-        assert any(expect["error_contains"] in error for error in result.validation.errors)
+        assert any(
+            expect["error_contains"] in error for error in result.validation.errors
+        )
 
 
 def test_there_are_at_least_five_golden_cases():

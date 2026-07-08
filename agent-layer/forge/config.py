@@ -28,11 +28,17 @@ class Settings(BaseSettings):
     llm_daily_budget_usd: Decimal = Decimal("10.00")
     llm_max_retries: int = 3
     llm_retry_base_delay_seconds: float = 2.0
+    # Per-service calls/minute ceiling (0 disables). Enforced from the shared
+    # llm_calls table so every gateway instance sees the same window.
+    llm_rate_limit_per_minute: int = 20
 
     # Local fallback when Anthropic is unreachable after retries
     ollama_enabled: bool = False
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "llama3.1"
+
+    # "json" (one object per line, for container log pipelines) or "text"
+    log_format: str = "json"
 
     # Run monitor + diagnostician
     monitor_poll_seconds: int = 60

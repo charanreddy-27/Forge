@@ -21,7 +21,9 @@ DEFINITION = {
             "parameters": {"url": "https://old.example.com", "method": "GET"},
         },
     ],
-    "connections": {"Cron": {"main": [[{"node": "Fetch", "type": "main", "index": 0}]]}},
+    "connections": {
+        "Cron": {"main": [[{"node": "Fetch", "type": "main", "index": 0}]]}
+    },
     "settings": {},
 }
 
@@ -40,7 +42,13 @@ LOW_RISK_PATCH = {
 HIGH_RISK_PATCH = {
     **DEFINITION,
     "nodes": DEFINITION["nodes"]
-    + [{"name": "Slack", "type": "n8n-nodes-base.slack", "parameters": {"channel": "#x"}}],
+    + [
+        {
+            "name": "Slack",
+            "type": "n8n-nodes-base.slack",
+            "parameters": {"channel": "#x"},
+        }
+    ],
 }
 
 
@@ -77,7 +85,9 @@ def make_diagnostician(session_factory, registry, llm_text: str, auto_apply=True
 class TestAutoRepair:
     def test_low_risk_patch_is_applied_and_resolved(self, session_factory, env):
         engine, registry, workflow, run = env
-        diagnostician = make_diagnostician(session_factory, registry, analysis(LOW_RISK_PATCH))
+        diagnostician = make_diagnostician(
+            session_factory, registry, analysis(LOW_RISK_PATCH)
+        )
 
         incident = diagnostician.diagnose_run(run.id)
 
@@ -105,7 +115,9 @@ class TestAutoRepair:
 class TestApprovalGate:
     def test_high_risk_patch_awaits_approval(self, session_factory, env):
         _, registry, workflow, run = env
-        diagnostician = make_diagnostician(session_factory, registry, analysis(HIGH_RISK_PATCH))
+        diagnostician = make_diagnostician(
+            session_factory, registry, analysis(HIGH_RISK_PATCH)
+        )
 
         incident = diagnostician.diagnose_run(run.id)
 
@@ -116,7 +128,9 @@ class TestApprovalGate:
 
     def test_approve_applies_patch_and_resolves(self, session_factory, env):
         engine, registry, workflow, run = env
-        diagnostician = make_diagnostician(session_factory, registry, analysis(HIGH_RISK_PATCH))
+        diagnostician = make_diagnostician(
+            session_factory, registry, analysis(HIGH_RISK_PATCH)
+        )
         incident = diagnostician.diagnose_run(run.id)
 
         approved = diagnostician.approve(incident.id, actor="human:me")
@@ -128,7 +142,9 @@ class TestApprovalGate:
 
     def test_dismiss_leaves_workflow_untouched(self, session_factory, env):
         _, registry, workflow, run = env
-        diagnostician = make_diagnostician(session_factory, registry, analysis(HIGH_RISK_PATCH))
+        diagnostician = make_diagnostician(
+            session_factory, registry, analysis(HIGH_RISK_PATCH)
+        )
         incident = diagnostician.diagnose_run(run.id)
 
         dismissed = diagnostician.dismiss(incident.id)
@@ -141,7 +157,11 @@ class TestIncidentReports:
     def test_no_patch_files_open_incident(self, session_factory, env):
         _, registry, _, run = env
         text = json.dumps(
-            {"summary": "remote API is down", "root_cause": "external outage", "patch": None}
+            {
+                "summary": "remote API is down",
+                "root_cause": "external outage",
+                "patch": None,
+            }
         )
         diagnostician = make_diagnostician(session_factory, registry, text)
 
@@ -154,7 +174,9 @@ class TestIncidentReports:
     def test_invalid_patch_is_discarded_not_applied(self, session_factory, env):
         _, registry, workflow, run = env
         bad_patch = {**LOW_RISK_PATCH, "nodes": [{"name": "X", "type": "evil.node"}]}
-        diagnostician = make_diagnostician(session_factory, registry, analysis(bad_patch))
+        diagnostician = make_diagnostician(
+            session_factory, registry, analysis(bad_patch)
+        )
 
         incident = diagnostician.diagnose_run(run.id)
 
@@ -173,7 +195,9 @@ class TestIncidentReports:
 
     def test_diagnosis_is_idempotent_per_run(self, session_factory, env):
         _, registry, _, run = env
-        diagnostician = make_diagnostician(session_factory, registry, analysis(HIGH_RISK_PATCH))
+        diagnostician = make_diagnostician(
+            session_factory, registry, analysis(HIGH_RISK_PATCH)
+        )
 
         first = diagnostician.diagnose_run(run.id)
         second = diagnostician.diagnose_run(run.id)

@@ -52,7 +52,9 @@ _EXAMPLE_WORKFLOW = {
         },
     ],
     "connections": {
-        "Every Morning": {"main": [[{"node": "Read Feed", "type": "main", "index": 0}]]},
+        "Every Morning": {
+            "main": [[{"node": "Read Feed", "type": "main", "index": 0}]]
+        },
         "Read Feed": {"main": [[{"node": "Email Me", "type": "main", "index": 0}]]},
     },
     "settings": {},
@@ -86,7 +88,9 @@ Output:
 
 
 def user_prompt(instruction: str, name: str | None) -> str:
-    naming = f'Name the workflow "{name}".' if name else "Choose a short kebab-case name."
+    naming = (
+        f'Name the workflow "{name}".' if name else "Choose a short kebab-case name."
+    )
     return f"Instruction: {instruction}\n{naming}\nReturn only the JSON object."
 
 

@@ -76,7 +76,9 @@ class Workflow(Base):
     )
     # Points at the workflow_versions.version currently deployed; 0 = never deployed.
     current_version: Mapped[int] = mapped_column(Integer, default=0)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow
+    )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utcnow, onupdate=utcnow
     )
@@ -89,7 +91,9 @@ class WorkflowVersion(Base):
     """Immutable snapshot of a workflow definition. Rollback = redeploy an old row."""
 
     __tablename__ = "workflow_versions"
-    __table_args__ = (UniqueConstraint("workflow_id", "version", name="uq_workflow_version"),)
+    __table_args__ = (
+        UniqueConstraint("workflow_id", "version", name="uq_workflow_version"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     workflow_id: Mapped[uuid.UUID] = mapped_column(
@@ -100,7 +104,9 @@ class WorkflowVersion(Base):
     # Who produced this version: "human" or an agent service name.
     created_by: Mapped[str] = mapped_column(String(64), nullable=False, default="human")
     comment: Mapped[str | None] = mapped_column(Text)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow
+    )
 
     workflow: Mapped[Workflow] = relationship(back_populates="versions")
 
@@ -116,7 +122,9 @@ class Run(Base):
     status: Mapped[RunStatus] = mapped_column(
         Enum(RunStatus, native_enum=False, length=32), default=RunStatus.RUNNING
     )
-    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    started_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow
+    )
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     error_message: Mapped[str | None] = mapped_column(Text)
     # Raw execution data from the engine, for the diagnostician.
@@ -141,7 +149,9 @@ class Incident(Base):
     root_cause: Mapped[str | None] = mapped_column(Text)
     # Patch proposed by the diagnostician; applied only after approval when risky.
     proposed_patch: Mapped[dict[str, Any] | None] = mapped_column(JSONType)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow
+    )
     resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 

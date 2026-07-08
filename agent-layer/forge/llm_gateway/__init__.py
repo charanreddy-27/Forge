@@ -6,7 +6,17 @@ enforces the daily cost budget as a hard stop, retries transient Anthropic
 errors with exponential backoff, and can fall back to a local Ollama instance.
 """
 
-from forge.llm_gateway.errors import BudgetExceededError, LLMUnavailableError
+from forge.llm_gateway.errors import (
+    BudgetExceededError,
+    LLMUnavailableError,
+    RateLimitedError,
+)
 from forge.llm_gateway.gateway import LLMGateway, LLMResponse
 
-__all__ = ["LLMGateway", "LLMResponse", "BudgetExceededError", "LLMUnavailableError"]
+__all__ = [
+    "BudgetExceededError",
+    "LLMGateway",
+    "LLMResponse",
+    "LLMUnavailableError",
+    "RateLimitedError",
+]

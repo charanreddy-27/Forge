@@ -36,7 +36,9 @@ def cost_usd(model: str, input_tokens: int, output_tokens: int) -> Decimal:
         return Decimal("0")
     pricing = PRICING.get(model)
     if pricing is None:
-        logger.warning("No pricing for model %r — logging cost as $0. Update pricing.py.", model)
+        logger.warning(
+            "No pricing for model %r — logging cost as $0. Update pricing.py.", model
+        )
         return Decimal("0")
     return (
         Decimal(input_tokens) * pricing.input_usd_per_mtok

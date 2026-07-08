@@ -18,11 +18,13 @@ from forge.api.workflows import router as workflows_router
 from forge.config import Settings, get_settings
 from forge.db.base import create_db_engine, create_session_factory
 from forge.engine_adapter import N8nAdapter
+from forge.logsetup import configure_logging
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     """App factory so tests can inject their own settings/database."""
     settings = settings or get_settings()
+    configure_logging(settings.log_format)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
@@ -31,9 +33,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.session_factory = create_session_factory(engine)
         # Tests replace this with a fake; nothing outside engine_adapter
         # may know the engine is n8n.
-        app.state.engine_adapter = N8nAdapter(settings.n8n_base_url, settings.n8n_api_key)
+        app.state.engine_adapter = N8nAdapter(
+            settings.n8n_base_url, settings.n8n_api_key
+        )
         # Shared connection pool for the generation job queue.
-        app.state.redis = redis.Redis.from_url(settings.redis_url, decode_responses=True)
+        app.state.redis = redis.Redis.from_url(
+            settings.redis_url, decode_responses=True
+        )
         yield
         engine.dispose()
         app.state.redis.close()
@@ -60,7 +66,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         ok = all(checks.values())
         return JSONResponse(
             status_code=200 if ok else 503,
-            content={"status": "ok" if ok else "degraded", "version": __version__, **checks},
+            content={
+                "status": "ok" if ok else "degraded",
+                "version": __version__,
+                **checks,
+            },
         )
 
     return app

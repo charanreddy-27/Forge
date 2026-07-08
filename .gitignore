@@ -20,6 +20,7 @@ node_modules/
 
 # Docker volumes / local data
 data/
+backups/
 
 # Editors
 .idea/

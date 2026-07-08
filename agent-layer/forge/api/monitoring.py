@@ -37,7 +37,9 @@ class RunOut(BaseModel):
 
 
 @router.get("/workflows/{workflow_id}/runs", response_model=list[RunOut])
-def list_runs(workflow_id: uuid.UUID, request: Request, limit: int = 50) -> list[RunOut]:
+def list_runs(
+    workflow_id: uuid.UUID, request: Request, limit: int = 50
+) -> list[RunOut]:
     with request.app.state.session_factory() as session:
         if session.get(Workflow, workflow_id) is None:
             raise HTTPException(status_code=404, detail=f"no workflow {workflow_id}")

@@ -36,19 +36,22 @@ docker compose down -v       # ⚠️ destroys ALL data (Postgres, Redis, n8n)
 
 ## Backup
 
-Everything that matters lives in Postgres (Forge tables in `public`, n8n state in the `n8n` schema):
+Everything that matters lives in Postgres (Forge tables in `public`, n8n state in the `n8n` schema). Use the script — it dumps, timestamps, and rotates:
 
 ```bash
-docker compose exec postgres pg_dump -U forge -d forge -Fc > forge-$(date +%F).dump
+scripts/backup.sh                    # → backups/forge-<stamp>.dump, keeps newest 14
+KEEP=30 BACKUP_DIR=/mnt/nas scripts/backup.sh   # custom retention/location
 ```
+
+Cron it (daily at 03:00): `0 3 * * * cd /path/to/forge && scripts/backup.sh >> backups/backup.log 2>&1`
 
 ## Restore
 
 ```bash
-docker compose up -d postgres
-docker compose exec -T postgres pg_restore -U forge -d forge --clean --if-exists < forge-YYYY-MM-DD.dump
-docker compose up -d
+scripts/restore.sh backups/forge-<stamp>.dump
 ```
+
+The script stops the writers (agent layer, workers, n8n, dashboard), restores into Postgres with `--clean`, then brings the stack back up (migrations re-run automatically on agent-layer start).
 
 ## Debug
 
@@ -108,7 +111,27 @@ curl -s -X POST localhost:8000/monitor/sync | jq
   ```
   Raise the budget in `.env` and `docker compose up -d agent-layer`, or wait for UTC midnight.
 - `LLMUnavailableError`: Anthropic was unreachable after retries. Check `ANTHROPIC_API_KEY`, network, or enable the Ollama fallback (`OLLAMA_ENABLED=true`).
-- Every call, including failures, is logged in `llm_calls` — that table is the first place to look.
+- `RateLimitedError`: a service exceeded `LLM_RATE_LIMIT_PER_MINUTE` (default 20/min per service). Unlike the budget, this clears by itself within 60s. Raise the limit in `.env` if it's genuinely too tight; `0` disables it.
+- Every call, including refusals (`error` prefixed `refused:`), is logged in `llm_calls` — that table is the first place to look.
+
+**Logs are structured JSON** (one object per line: `ts`, `level`, `logger`, `message`, `exception`). Grep-friendly:
+
+```bash
+docker compose logs --no-log-prefix run-monitor | jq -r 'select(.level=="error") | .message' 2>/dev/null
+```
+
+Set `LOG_FORMAT=text` in `.env` for human-readable output during local debugging.
+
+## Load testing
+
+`loadtest/locustfile.py` replays dashboard-shaped read traffic (health, lists, costs, drill-downs). Against a running stack:
+
+```bash
+pip install locust
+locust -f loadtest/locustfile.py --host http://localhost:8000 --headless -u 20 -r 5 -t 30s
+```
+
+Baseline on a dev laptop (SQLite-backed demo API, 20 users): aggregate p50 ≈ 4 ms, p95 ≈ 19 ms at ~38 req/s. Note `/health` returns 503 (by design) whenever Redis or Postgres is down — a wall of 503s in the report means a dependency is missing, not that the API is slow. To also exercise the write path (enqueues real generation jobs): `LOADTEST_SUBMIT=1 locust ...` — keep the generation worker stopped unless you intend to spend LLM budget. Re-run before/after scaling changes; the growth path is ADR-005.
 
 **Migrations**
 

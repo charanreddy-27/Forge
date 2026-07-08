@@ -71,7 +71,9 @@ class JobQueue:
         return job_id, payload
 
     def finish(self, job_id: str, status: str, result: dict[str, Any]) -> None:
-        self._update(job_id, status=status, result=json.dumps(result), finished_at=_now())
+        self._update(
+            job_id, status=status, result=json.dumps(result), finished_at=_now()
+        )
 
     def fail(self, job_id: str, error: str) -> None:
         self._update(job_id, status="failed", error=error, finished_at=_now())

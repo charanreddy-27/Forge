@@ -49,7 +49,9 @@ class WorkflowGenerator:
             )
             definition, parse_error = extract_json_object(response.text)
             if definition is None:
-                validation = ValidationResult(errors=[parse_error or "no JSON in response"])
+                validation = ValidationResult(
+                    errors=[parse_error or "no JSON in response"]
+                )
             else:
                 validation = validate_workflow(definition)
 

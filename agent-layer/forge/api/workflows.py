@@ -10,7 +10,12 @@ from typing import TypeVar
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 
-from forge.api.schemas import DeployRequest, RollbackRequest, WorkflowOut, WorkflowVersionOut
+from forge.api.schemas import (
+    DeployRequest,
+    RollbackRequest,
+    WorkflowOut,
+    WorkflowVersionOut,
+)
 from forge.engine_adapter import EngineError, EngineNotFoundError
 from forge.registry import VersionNotFoundError, WorkflowNotFoundError, WorkflowRegistry
 
@@ -33,19 +38,28 @@ def list_workflows(registry: WorkflowRegistry = Registry) -> list[WorkflowOut]:
 
 
 @router.post("", response_model=WorkflowOut, status_code=201)
-def deploy_workflow(body: DeployRequest, registry: WorkflowRegistry = Registry) -> WorkflowOut:
+def deploy_workflow(
+    body: DeployRequest, registry: WorkflowRegistry = Registry
+) -> WorkflowOut:
     """Create a workflow and deploy version 1 to the engine."""
     workflow = _translate(
         lambda: registry.deploy(
-            name=body.name, definition=body.definition, actor=body.actor, comment=body.comment
+            name=body.name,
+            definition=body.definition,
+            actor=body.actor,
+            comment=body.comment,
         )
     )
     return WorkflowOut.model_validate(workflow)
 
 
 @router.get("/{workflow_id}", response_model=WorkflowOut)
-def get_workflow(workflow_id: uuid.UUID, registry: WorkflowRegistry = Registry) -> WorkflowOut:
-    return WorkflowOut.model_validate(_translate(lambda: registry.get_workflow(workflow_id)))
+def get_workflow(
+    workflow_id: uuid.UUID, registry: WorkflowRegistry = Registry
+) -> WorkflowOut:
+    return WorkflowOut.model_validate(
+        _translate(lambda: registry.get_workflow(workflow_id))
+    )
 
 
 @router.put("/{workflow_id}", response_model=WorkflowOut)
@@ -85,19 +99,27 @@ def rollback_workflow(
 
 
 @router.post("/{workflow_id}/activate", response_model=WorkflowOut)
-def activate_workflow(workflow_id: uuid.UUID, registry: WorkflowRegistry = Registry) -> WorkflowOut:
-    return WorkflowOut.model_validate(_translate(lambda: registry.set_active(workflow_id, True)))
+def activate_workflow(
+    workflow_id: uuid.UUID, registry: WorkflowRegistry = Registry
+) -> WorkflowOut:
+    return WorkflowOut.model_validate(
+        _translate(lambda: registry.set_active(workflow_id, True))
+    )
 
 
 @router.post("/{workflow_id}/deactivate", response_model=WorkflowOut)
 def deactivate_workflow(
     workflow_id: uuid.UUID, registry: WorkflowRegistry = Registry
 ) -> WorkflowOut:
-    return WorkflowOut.model_validate(_translate(lambda: registry.set_active(workflow_id, False)))
+    return WorkflowOut.model_validate(
+        _translate(lambda: registry.set_active(workflow_id, False))
+    )
 
 
 @router.delete("/{workflow_id}", status_code=204)
-def delete_workflow(workflow_id: uuid.UUID, registry: WorkflowRegistry = Registry) -> None:
+def delete_workflow(
+    workflow_id: uuid.UUID, registry: WorkflowRegistry = Registry
+) -> None:
     """Delete from the engine (after a pre-delete backup version); history is kept."""
     _translate(lambda: registry.delete(workflow_id))
 

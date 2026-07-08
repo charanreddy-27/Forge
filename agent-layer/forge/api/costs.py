@@ -13,7 +13,9 @@ router = APIRouter(prefix="/costs", tags=["costs"])
 
 
 @router.get("/summary")
-def cost_summary(request: Request, days: int = Query(default=14, ge=1, le=90)) -> dict[str, Any]:
+def cost_summary(
+    request: Request, days: int = Query(default=14, ge=1, le=90)
+) -> dict[str, Any]:
     """Daily and per-service LLM spend for the last `days` days, plus budget state."""
     settings = request.app.state.settings
     since = datetime.now(UTC) - timedelta(days=days)

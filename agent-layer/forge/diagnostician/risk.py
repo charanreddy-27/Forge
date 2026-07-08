@@ -50,14 +50,21 @@ def assess_patch(old: dict[str, Any], new: dict[str, Any]) -> RiskAssessment:
     added_destructive = new_destructive - old_destructive
     if added_destructive:
         reasons.append(
-            "introduces destructive behavior in node(s): " + ", ".join(sorted(added_destructive))
+            "introduces destructive behavior in node(s): "
+            + ", ".join(sorted(added_destructive))
         )
 
     # Rule 2: trigger change (what starts the workflow).
-    old_triggers = {n["type"] for n in old_nodes.values() if n.get("type") in _TRIGGER_TYPES}
-    new_triggers = {n["type"] for n in new_nodes.values() if n.get("type") in _TRIGGER_TYPES}
+    old_triggers = {
+        n["type"] for n in old_nodes.values() if n.get("type") in _TRIGGER_TYPES
+    }
+    new_triggers = {
+        n["type"] for n in new_nodes.values() if n.get("type") in _TRIGGER_TYPES
+    }
     if old_triggers != new_triggers:
-        reasons.append(f"changes the trigger ({sorted(old_triggers)} → {sorted(new_triggers)})")
+        reasons.append(
+            f"changes the trigger ({sorted(old_triggers)} → {sorted(new_triggers)})"
+        )
 
     # Rule 3: structural rewrite.
     added = set(new_nodes) - set(old_nodes)
@@ -83,5 +90,7 @@ def assess_patch(old: dict[str, Any], new: dict[str, Any]) -> RiskAssessment:
 def _nodes_by_name(definition: dict[str, Any]) -> dict[str, dict[str, Any]]:
     nodes = definition.get("nodes", [])
     return {
-        str(node.get("name")): node for node in nodes if isinstance(node, dict) and node.get("name")
+        str(node.get("name")): node
+        for node in nodes
+        if isinstance(node, dict) and node.get("name")
     }

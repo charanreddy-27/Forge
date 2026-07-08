@@ -9,8 +9,17 @@ from forge.db.models import AuditLog, WorkflowStatus, WorkflowVersion
 from forge.registry import VersionNotFoundError, WorkflowNotFoundError, WorkflowRegistry
 from tests.fake_engine import FakeEngineAdapter
 
-DEF_V1 = {"name": "digest", "nodes": [{"type": "cron"}], "connections": {}, "settings": {}}
-DEF_V2 = {"name": "digest", "nodes": [{"type": "cron"}, {"type": "http"}], "connections": {}}
+DEF_V1 = {
+    "name": "digest",
+    "nodes": [{"type": "cron"}],
+    "connections": {},
+    "settings": {},
+}
+DEF_V2 = {
+    "name": "digest",
+    "nodes": [{"type": "cron"}, {"type": "http"}],
+    "connections": {},
+}
 
 
 @pytest.fixture()
@@ -35,7 +44,10 @@ class TestDeploy:
     def test_redeploy_appends_v2_and_updates_engine(self, registry, engine):
         workflow = registry.deploy(name="digest", definition=DEF_V1)
         workflow = registry.deploy(
-            name="digest", definition=DEF_V2, workflow_id=workflow.id, actor="workflow-generator"
+            name="digest",
+            definition=DEF_V2,
+            workflow_id=workflow.id,
+            actor="workflow-generator",
         )
 
         assert workflow.current_version == 2
@@ -110,7 +122,9 @@ class TestActivateAndDelete:
         workflow = registry.set_active(workflow.id, False)
         assert workflow.status == WorkflowStatus.INACTIVE
 
-    def test_delete_snapshots_live_definition_first(self, registry, engine, session_factory):
+    def test_delete_snapshots_live_definition_first(
+        self, registry, engine, session_factory
+    ):
         workflow = registry.deploy(name="digest", definition=DEF_V1)
         engine_id = workflow.engine_workflow_id
         # Simulate drift: someone changed the workflow in the engine directly.

@@ -10,7 +10,11 @@ from typing import Any
 import httpx
 
 from forge.engine_adapter.base import EngineAdapter, EngineExecution, EngineWorkflow
-from forge.engine_adapter.errors import EngineAuthError, EngineError, EngineNotFoundError
+from forge.engine_adapter.errors import (
+    EngineAuthError,
+    EngineError,
+    EngineNotFoundError,
+)
 
 # n8n's create/update endpoints accept exactly these top-level fields; anything
 # else (id, active, tags, ...) is rejected, so we filter before sending.
@@ -49,7 +53,9 @@ class N8nAdapter(EngineAdapter):
         data = self._request("POST", "/api/v1/workflows", json=payload)
         return self._to_workflow(data)
 
-    def update_workflow(self, engine_id: str, definition: dict[str, Any]) -> EngineWorkflow:
+    def update_workflow(
+        self, engine_id: str, definition: dict[str, Any]
+    ) -> EngineWorkflow:
         payload = self._writable(definition)
         data = self._request("PUT", f"/api/v1/workflows/{engine_id}", json=payload)
         return self._to_workflow(data)
@@ -68,7 +74,9 @@ class N8nAdapter(EngineAdapter):
 
     def list_executions(self, engine_id: str, limit: int = 50) -> list[EngineExecution]:
         data = self._request(
-            "GET", "/api/v1/executions", params={"workflowId": engine_id, "limit": limit}
+            "GET",
+            "/api/v1/executions",
+            params={"workflowId": engine_id, "limit": limit},
         )
         return [self._to_execution(item) for item in data.get("data", [])]
 
@@ -94,7 +102,8 @@ class N8nAdapter(EngineAdapter):
             raise EngineNotFoundError(f"{method} {path}: not found in n8n")
         if response.status_code >= 400:
             raise EngineError(
-                f"{method} {path}: n8n returned {response.status_code}: " f"{response.text[:500]}"
+                f"{method} {path}: n8n returned {response.status_code}: "
+                f"{response.text[:500]}"
             )
         if not response.content:
             return {}

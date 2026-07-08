@@ -29,6 +29,8 @@ def settings() -> Settings:
         llm_daily_budget_usd=Decimal("10.00"),
         llm_max_retries=2,
         llm_retry_base_delay_seconds=0.01,
+        llm_rate_limit_per_minute=1000,  # effectively off; rate-limit tests lower it
+        log_format="text",  # keep pytest output readable
         ollama_enabled=False,
         _env_file=None,  # never let a developer's .env leak into tests
     )

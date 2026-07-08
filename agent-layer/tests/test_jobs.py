@@ -27,7 +27,9 @@ SAFE_WORKFLOW = {
             "parameters": {"url": "https://api.example.com", "method": "GET"},
         },
     ],
-    "connections": {"Every Day": {"main": [[{"node": "Fetch", "type": "main", "index": 0}]]}},
+    "connections": {
+        "Every Day": {"main": [[{"node": "Fetch", "type": "main", "index": 0}]]}
+    },
     "settings": {},
 }
 
@@ -44,7 +46,9 @@ def queue() -> JobQueue:
     return JobQueue(FakeRedis())
 
 
-def make_handler(session_factory, llm_text: str) -> tuple[GenerationJobHandler, FakeEngineAdapter]:
+def make_handler(
+    session_factory, llm_text: str
+) -> tuple[GenerationJobHandler, FakeEngineAdapter]:
     engine = FakeEngineAdapter()
     handler = GenerationJobHandler(
         generator=WorkflowGenerator(FakeGateway([llm_text])),  # type: ignore[arg-type]
@@ -86,7 +90,9 @@ class TestQueue:
 class TestWorker:
     def test_worker_runs_handler_and_stores_result(self, queue):
         job_id = queue.enqueue({"x": 1})
-        run_worker(queue, lambda payload: ("succeeded", {"echo": payload}), run_forever=False)
+        run_worker(
+            queue, lambda payload: ("succeeded", {"echo": payload}), run_forever=False
+        )
 
         record = queue.get(job_id)
         assert record["status"] == "succeeded"
@@ -119,9 +125,13 @@ class TestGenerationHandler:
         assert record["result"]["workflow_version"] == 1
         assert len(engine.workflows) == 1  # deployed to the engine
 
-    def test_safe_workflow_without_deploy_only_stores_definition(self, session_factory, queue):
+    def test_safe_workflow_without_deploy_only_stores_definition(
+        self, session_factory, queue
+    ):
         handler, engine = make_handler(session_factory, json.dumps(SAFE_WORKFLOW))
-        job_id = queue.enqueue({"instruction": "transform items daily", "deploy": False})
+        job_id = queue.enqueue(
+            {"instruction": "transform items daily", "deploy": False}
+        )
         run_worker(queue, handler, run_forever=False)
 
         record = queue.get(job_id)
@@ -131,9 +141,15 @@ class TestGenerationHandler:
         assert engine.workflows == {}
 
     def test_destructive_without_approval_is_gated(self, session_factory, queue):
-        handler, engine = make_handler(session_factory, json.dumps(DESTRUCTIVE_WORKFLOW))
+        handler, engine = make_handler(
+            session_factory, json.dumps(DESTRUCTIVE_WORKFLOW)
+        )
         job_id = queue.enqueue(
-            {"instruction": "email me daily", "deploy": True, "allow_destructive": False}
+            {
+                "instruction": "email me daily",
+                "deploy": True,
+                "allow_destructive": False,
+            }
         )
         run_worker(queue, handler, run_forever=False)
 
@@ -143,7 +159,9 @@ class TestGenerationHandler:
         assert engine.workflows == {}  # NOT deployed
 
     def test_destructive_with_approval_deploys(self, session_factory, queue):
-        handler, engine = make_handler(session_factory, json.dumps(DESTRUCTIVE_WORKFLOW))
+        handler, engine = make_handler(
+            session_factory, json.dumps(DESTRUCTIVE_WORKFLOW)
+        )
         job_id = queue.enqueue(
             {"instruction": "email me daily", "deploy": True, "allow_destructive": True}
         )
@@ -152,7 +170,9 @@ class TestGenerationHandler:
         assert queue.get(job_id)["status"] == "succeeded"
         assert len(engine.workflows) == 1
 
-    def test_invalid_generation_fails_with_errors_recorded(self, session_factory, queue):
+    def test_invalid_generation_fails_with_errors_recorded(
+        self, session_factory, queue
+    ):
         handler, engine = make_handler(session_factory, "not json, sorry")
         job_id = queue.enqueue({"instruction": "do something", "deploy": True})
         run_worker(queue, handler, run_forever=False)

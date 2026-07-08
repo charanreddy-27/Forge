@@ -41,7 +41,9 @@ class EngineAdapter(abc.ABC):
         """Create a workflow in the engine and return it (with its engine ID)."""
 
     @abc.abstractmethod
-    def update_workflow(self, engine_id: str, definition: dict[str, Any]) -> EngineWorkflow:
+    def update_workflow(
+        self, engine_id: str, definition: dict[str, Any]
+    ) -> EngineWorkflow:
         """Replace an existing workflow's definition."""
 
     @abc.abstractmethod

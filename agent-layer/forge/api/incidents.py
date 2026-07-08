@@ -90,7 +90,9 @@ def approve_incident(
 
 
 @router.post("/{incident_id}/dismiss", response_model=IncidentOut)
-def dismiss_incident(incident_id: uuid.UUID, diagnostician: Diagnostician = Diag) -> IncidentOut:
+def dismiss_incident(
+    incident_id: uuid.UUID, diagnostician: Diagnostician = Diag
+) -> IncidentOut:
     try:
         incident = diagnostician.dismiss(incident_id)
     except IncidentNotFoundError as exc:

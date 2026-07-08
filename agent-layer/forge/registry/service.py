@@ -36,7 +36,11 @@ class WorkflowRegistry:
 
     def list_workflows(self) -> list[Workflow]:
         with self._session_factory() as session:
-            rows = session.execute(select(Workflow).order_by(Workflow.created_at)).scalars().all()
+            rows = (
+                session.execute(select(Workflow).order_by(Workflow.created_at))
+                .scalars()
+                .all()
+            )
             return list(rows)
 
     def get_workflow(self, workflow_id: uuid.UUID) -> Workflow:
@@ -92,7 +96,9 @@ class WorkflowRegistry:
 
             workflow.current_version = version.version
             if workflow.status == WorkflowStatus.DRAFT:
-                workflow.status = WorkflowStatus.INACTIVE  # deployed but not yet activated
+                workflow.status = (
+                    WorkflowStatus.INACTIVE
+                )  # deployed but not yet activated
 
             self._audit(
                 session,
@@ -138,7 +144,9 @@ class WorkflowRegistry:
                 engine_wf = self._adapter.create_workflow(target.definition)
                 workflow.engine_workflow_id = engine_wf.id
             else:
-                self._adapter.update_workflow(workflow.engine_workflow_id, target.definition)
+                self._adapter.update_workflow(
+                    workflow.engine_workflow_id, target.definition
+                )
 
             workflow.current_version = new_version.version
             self._audit(
@@ -146,19 +154,28 @@ class WorkflowRegistry:
                 actor=actor,
                 action="workflow.rollback",
                 workflow=workflow,
-                detail={"from_version": target_version, "as_version": new_version.version},
+                detail={
+                    "from_version": target_version,
+                    "as_version": new_version.version,
+                },
             )
             session.commit()
             session.refresh(workflow)
             return workflow
 
-    def set_active(self, workflow_id: uuid.UUID, active: bool, actor: str = "human") -> Workflow:
+    def set_active(
+        self, workflow_id: uuid.UUID, active: bool, actor: str = "human"
+    ) -> Workflow:
         with self._session_factory() as session:
             workflow = self._get(session, workflow_id)
             if workflow.engine_workflow_id is None:
-                raise VersionNotFoundError(f"Workflow {workflow_id} has never been deployed")
+                raise VersionNotFoundError(
+                    f"Workflow {workflow_id} has never been deployed"
+                )
             self._adapter.set_active(workflow.engine_workflow_id, active)
-            workflow.status = WorkflowStatus.ACTIVE if active else WorkflowStatus.INACTIVE
+            workflow.status = (
+                WorkflowStatus.ACTIVE if active else WorkflowStatus.INACTIVE
+            )
             self._audit(
                 session,
                 actor=actor,
@@ -182,13 +199,19 @@ class WorkflowRegistry:
             if workflow.engine_workflow_id is not None:
                 live = self._adapter.get_workflow(workflow.engine_workflow_id)
                 self._add_version(
-                    session, workflow, live.definition, actor, comment="pre-delete backup"
+                    session,
+                    workflow,
+                    live.definition,
+                    actor,
+                    comment="pre-delete backup",
                 )
                 self._adapter.delete_workflow(workflow.engine_workflow_id)
                 workflow.engine_workflow_id = None
 
             workflow.status = WorkflowStatus.INACTIVE
-            self._audit(session, actor=actor, action="workflow.delete", workflow=workflow)
+            self._audit(
+                session, actor=actor, action="workflow.delete", workflow=workflow
+            )
             session.commit()
 
     # ── internals ────────────────────────────────────────────────────────

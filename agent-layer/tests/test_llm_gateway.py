@@ -9,7 +9,12 @@ import pytest
 from sqlalchemy import select
 
 from forge.db.models import LLMCall
-from forge.llm_gateway import BudgetExceededError, LLMGateway, LLMUnavailableError
+from forge.llm_gateway import (
+    BudgetExceededError,
+    LLMGateway,
+    LLMUnavailableError,
+    RateLimitedError,
+)
 from forge.llm_gateway.pricing import cost_usd
 
 # ── Fakes ────────────────────────────────────────────────────────────────────
@@ -65,7 +70,9 @@ def _bad_request_error() -> anthropic.BadRequestError:
     return anthropic.BadRequestError("bad request", response=response, body=None)
 
 
-def _ok_message(text: str = "hello", input_tokens: int = 1000, output_tokens: int = 500):
+def _ok_message(
+    text: str = "hello", input_tokens: int = 1000, output_tokens: int = 500
+):
     return FakeMessage(
         content=[FakeTextBlock(text=text)],
         usage=FakeUsage(input_tokens=input_tokens, output_tokens=output_tokens),
@@ -90,7 +97,9 @@ class TestCompleteAndLog:
     def test_returns_text_and_computes_cost(self, session_factory, settings):
         gateway, _ = make_gateway(session_factory, settings, [_ok_message()])
 
-        response = gateway.complete(prompt="hi", service="test-svc", purpose="unit test")
+        response = gateway.complete(
+            prompt="hi", service="test-svc", purpose="unit test"
+        )
 
         assert response.text == "hello"
         assert response.provider == "anthropic"
@@ -113,7 +122,9 @@ class TestCompleteAndLog:
         assert call.cost_usd == Decimal("0.017500")
         assert call.success is True
 
-    def test_system_prompt_and_model_override_are_passed_through(self, session_factory, settings):
+    def test_system_prompt_and_model_override_are_passed_through(
+        self, session_factory, settings
+    ):
         gateway, client = make_gateway(session_factory, settings, [_ok_message()])
 
         gateway.complete(
@@ -148,7 +159,9 @@ class TestRetries:
         # base delay 0.01 doubles each retry: 0.01, 0.02
         assert sleeps == [0.01, 0.02]
 
-    def test_gives_up_after_max_retries_and_logs_failure(self, session_factory, settings):
+    def test_gives_up_after_max_retries_and_logs_failure(
+        self, session_factory, settings
+    ):
         # settings.llm_max_retries = 2 → 3 attempts total
         gateway, _ = make_gateway(
             session_factory,
@@ -165,7 +178,9 @@ class TestRetries:
         assert call.cost_usd == Decimal("0")
 
     def test_does_not_retry_client_errors(self, session_factory, settings):
-        gateway, client = make_gateway(session_factory, settings, [_bad_request_error()])
+        gateway, client = make_gateway(
+            session_factory, settings, [_bad_request_error()]
+        )
 
         with pytest.raises(LLMUnavailableError):
             gateway.complete(prompt="hi", service="s", purpose="p")
@@ -196,7 +211,7 @@ class TestBudget:
         assert client.messages.calls == []
         with session_factory() as session:
             calls = session.execute(select(LLMCall)).scalars().all()
-        blocked = [c for c in calls if c.error == "daily budget exceeded"]
+        blocked = [c for c in calls if c.error == "refused: daily budget exceeded"]
         assert len(blocked) == 1
         assert blocked[0].success is False
 
@@ -218,6 +233,61 @@ class TestBudget:
         assert response.text == "hello"
 
 
+class TestRateLimit:
+    def test_service_over_limit_is_refused_and_logged(self, session_factory, settings):
+        settings = settings.model_copy(update={"llm_rate_limit_per_minute": 2})
+        gateway, client = make_gateway(
+            session_factory, settings, [_ok_message(), _ok_message(), _ok_message()]
+        )
+
+        gateway.complete(prompt="1", service="busy-svc", purpose="p")
+        gateway.complete(prompt="2", service="busy-svc", purpose="p")
+        with pytest.raises(RateLimitedError):
+            gateway.complete(prompt="3", service="busy-svc", purpose="p")
+
+        assert len(client.messages.calls) == 2  # third never reached Anthropic
+        with session_factory() as session:
+            refusals = [
+                c
+                for c in session.execute(select(LLMCall)).scalars()
+                if c.error and c.error.startswith("refused: rate limit")
+            ]
+        assert len(refusals) == 1
+        assert refusals[0].success is False
+
+    def test_limits_are_per_service(self, session_factory, settings):
+        settings = settings.model_copy(update={"llm_rate_limit_per_minute": 1})
+        gateway, _ = make_gateway(
+            session_factory, settings, [_ok_message(), _ok_message()]
+        )
+
+        gateway.complete(prompt="1", service="svc-a", purpose="p")
+        # svc-a is now at its limit, but svc-b has its own window.
+        response = gateway.complete(prompt="2", service="svc-b", purpose="p")
+        assert response.text == "hello"
+
+    def test_refusals_do_not_consume_the_window(self, session_factory, settings):
+        settings = settings.model_copy(update={"llm_rate_limit_per_minute": 1})
+        gateway, _ = make_gateway(session_factory, settings, [_ok_message()])
+
+        gateway.complete(prompt="1", service="svc", purpose="p")
+        for _ in range(3):  # pile up refusal rows
+            with pytest.raises(RateLimitedError):
+                gateway.complete(prompt="x", service="svc", purpose="p")
+
+        from forge.llm_gateway.ratelimit import calls_in_last_minute
+
+        with session_factory() as session:
+            # Only the one real call counts — refusals must not extend the lockout.
+            assert calls_in_last_minute(session, "svc") == 1
+
+    def test_zero_disables_the_limiter(self, session_factory, settings):
+        settings = settings.model_copy(update={"llm_rate_limit_per_minute": 0})
+        gateway, _ = make_gateway(session_factory, settings, [_ok_message()] * 5)
+        for i in range(5):
+            gateway.complete(prompt=str(i), service="svc", purpose="p")
+
+
 class TestOllamaFallback:
     def test_falls_back_to_ollama_when_anthropic_unavailable(
         self, session_factory, settings, monkeypatch
@@ -235,7 +305,11 @@ class TestOllamaFallback:
             return httpx.Response(
                 200,
                 request=request,
-                json={"response": "local answer", "prompt_eval_count": 10, "eval_count": 20},
+                json={
+                    "response": "local answer",
+                    "prompt_eval_count": 10,
+                    "eval_count": 20,
+                },
             )
 
         monkeypatch.setattr(httpx, "post", fake_post)
@@ -251,7 +325,9 @@ class TestOllamaFallback:
         assert call.provider == "ollama"
         assert call.success is True
 
-    def test_raises_when_fallback_also_fails(self, session_factory, settings, monkeypatch):
+    def test_raises_when_fallback_also_fails(
+        self, session_factory, settings, monkeypatch
+    ):
         settings = settings.model_copy(update={"ollama_enabled": True})
         gateway, _ = make_gateway(
             session_factory,

@@ -14,6 +14,7 @@ from forge.db.base import create_db_engine, create_session_factory
 from forge.diagnostician import Diagnostician
 from forge.engine_adapter import N8nAdapter
 from forge.llm_gateway import LLMGateway
+from forge.logsetup import configure_logging
 from forge.monitor.service import RunMonitor
 from forge.registry import WorkflowRegistry
 
@@ -40,8 +41,8 @@ def poll_once(monitor: RunMonitor, diagnostician: Diagnostician) -> int:
 
 
 def main() -> None:
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     settings = get_settings()
+    configure_logging(settings.log_format)
 
     engine = create_db_engine(settings.database_url)
     session_factory = create_session_factory(engine)

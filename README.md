@@ -60,7 +60,7 @@ See [docs/architecture.md](docs/architecture.md) for the system diagram and data
 | 3 — Workflow generator | NL → validated workflow JSON as background jobs | ✅ |
 | 4 — Run monitor + diagnostician | Health tracking, root-cause analysis, auto-repair with approval gates | ✅ |
 | 5 — Dashboard | Next.js UI: workflows, runs, incidents, costs, chat | ✅ |
-| 6 — Hardening & scale | Rate limits, backups, structured logging, load tests | ⏳ |
+| 6 — Hardening & scale | Rate limits, backups, structured logging, load tests | ✅ |
 
 ## Development
 
@@ -74,3 +74,5 @@ python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"
 ```
 
 Conventional commits (`feat:`, `fix:`, `docs:`, `refactor:`). No secrets in code — `.env` and `.env.example` stay in sync.
+
+Operations (backups, restore, load testing, failure handling) live in [docs/runbook.md](docs/runbook.md); design decisions in [docs/adr/](docs/adr/) (001 engine choice · 002 versioning · 003 generation & validation · 004 patch risk rubric · 005 scaling path).

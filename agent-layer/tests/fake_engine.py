@@ -30,7 +30,9 @@ class FakeEngineAdapter(EngineAdapter):
         self.calls.append(("create", engine_id))
         return workflow
 
-    def update_workflow(self, engine_id: str, definition: dict[str, Any]) -> EngineWorkflow:
+    def update_workflow(
+        self, engine_id: str, definition: dict[str, Any]
+    ) -> EngineWorkflow:
         self._require(engine_id)
         workflow = EngineWorkflow(
             id=engine_id,
@@ -55,7 +57,10 @@ class FakeEngineAdapter(EngineAdapter):
         self._require(engine_id)
         current = self.workflows[engine_id]
         workflow = EngineWorkflow(
-            id=engine_id, name=current.name, active=active, definition=current.definition
+            id=engine_id,
+            name=current.name,
+            active=active,
+            definition=current.definition,
         )
         self.workflows[engine_id] = workflow
         self.calls.append(("activate" if active else "deactivate", engine_id))

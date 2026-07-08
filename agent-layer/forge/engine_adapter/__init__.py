@@ -5,7 +5,11 @@ writing one new adapter, nothing more.
 """
 
 from forge.engine_adapter.base import EngineAdapter, EngineExecution, EngineWorkflow
-from forge.engine_adapter.errors import EngineAuthError, EngineError, EngineNotFoundError
+from forge.engine_adapter.errors import (
+    EngineAuthError,
+    EngineError,
+    EngineNotFoundError,
+)
 from forge.engine_adapter.n8n import N8nAdapter
 
 __all__ = [

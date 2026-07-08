@@ -27,7 +27,9 @@ Patch rules:
 
 
 def diagnosis_prompt(
-    definition: dict[str, Any], execution_data: dict[str, Any], error_message: str | None
+    definition: dict[str, Any],
+    execution_data: dict[str, Any],
+    error_message: str | None,
 ) -> str:
     execution_json = json.dumps(execution_data, default=str)
     if len(execution_json) > _MAX_EXECUTION_CHARS:

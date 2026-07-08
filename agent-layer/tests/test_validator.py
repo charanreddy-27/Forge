@@ -16,7 +16,9 @@ VALID = {
             "parameters": {"url": "https://example.com", "method": "GET"},
         },
     ],
-    "connections": {"Cron": {"main": [[{"node": "Fetch", "type": "main", "index": 0}]]}},
+    "connections": {
+        "Cron": {"main": [[{"node": "Fetch", "type": "main", "index": 0}]]}
+    },
     "settings": {},
 }
 
@@ -58,7 +60,9 @@ class TestWhitelist:
             "connections": {},
         }
         result = validate_workflow(definition)
-        assert any("not in the allowed node catalog" in error for error in result.errors)
+        assert any(
+            "not in the allowed node catalog" in error for error in result.errors
+        )
 
 
 class TestConnections:
@@ -150,7 +154,9 @@ class TestDestructive:
             "type": "n8n-nodes-base.httpRequest",
             "parameters": {"url": "https://x", "method": "POST"},
         }
-        result = validate_workflow({"name": "x", "nodes": [get_node, post_node], "connections": {}})
+        result = validate_workflow(
+            {"name": "x", "nodes": [get_node, post_node], "connections": {}}
+        )
         assert result.destructive_nodes == ["Write"]
 
     def test_http_without_method_defaults_to_safe_get(self):
@@ -159,4 +165,6 @@ class TestDestructive:
             "type": "n8n-nodes-base.httpRequest",
             "parameters": {"url": "https://x"},
         }
-        assert not validate_workflow({"name": "x", "nodes": [node], "connections": {}}).destructive
+        assert not validate_workflow(
+            {"name": "x", "nodes": [node], "connections": {}}
+        ).destructive

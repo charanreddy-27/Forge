@@ -64,7 +64,9 @@ class Diagnostician:
             existing: Incident | None = session.execute(
                 select(Incident).where(
                     Incident.run_id == run_id,
-                    Incident.status.in_([IncidentStatus.OPEN, IncidentStatus.AWAITING_APPROVAL]),
+                    Incident.status.in_(
+                        [IncidentStatus.OPEN, IncidentStatus.AWAITING_APPROVAL]
+                    ),
                 )
             ).scalar_one_or_none()
             if existing is not None:
@@ -150,7 +152,13 @@ class Diagnostician:
 
         if not isinstance(patch, dict):
             return self._file_incident(
-                workflow_id, run_id, IncidentStatus.OPEN, "medium", summary, root_cause, None
+                workflow_id,
+                run_id,
+                IncidentStatus.OPEN,
+                "medium",
+                summary,
+                root_cause,
+                None,
             )
 
         validation = validate_workflow(patch)
@@ -175,7 +183,13 @@ class Diagnostician:
                 comment=f"auto-repair for run {run_id} (risk: low)",
             )
             incident = self._file_incident(
-                workflow_id, run_id, IncidentStatus.RESOLVED, "low", summary, root_cause, patch
+                workflow_id,
+                run_id,
+                IncidentStatus.RESOLVED,
+                "low",
+                summary,
+                root_cause,
+                patch,
             )
             logger.info("run %s auto-repaired (incident %s)", run_id, incident.id)
             return incident
@@ -234,7 +248,11 @@ class Diagnostician:
                 WorkflowVersion.version == workflow.current_version,
             )
         ).scalar_one_or_none()
-        return dict(version.definition) if version else {"name": workflow.name, "nodes": []}
+        return (
+            dict(version.definition)
+            if version
+            else {"name": workflow.name, "nodes": []}
+        )
 
 
 class IncidentNotFoundError(Exception):

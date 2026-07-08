@@ -35,7 +35,9 @@ def test_submit_returns_202_and_job_is_queued(client_and_queue):
 
 def test_poll_job_status_and_result(client_and_queue):
     client, queue = client_and_queue
-    job_id = client.post("/generate", json={"instruction": "watch my feed"}).json()["job_id"]
+    job_id = client.post("/generate", json={"instruction": "watch my feed"}).json()[
+        "job_id"
+    ]
 
     # Simulate the worker completing the job.
     claimed_id, _ = queue.claim(timeout=1)
