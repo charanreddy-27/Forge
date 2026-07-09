@@ -1,38 +1,76 @@
-import type { Metadata } from "next";
-import Link from "next/link";
+import type { Metadata, Viewport } from "next";
+import { DM_Sans, JetBrains_Mono, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 
+// Self-hosted at build time (no runtime Google request, no layout shift).
+const display = Space_Grotesk({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-display",
+  display: "swap",
+});
+const sans = DM_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "700"],
+  variable: "--font-sans",
+  display: "swap",
+});
+const mono = JetBrains_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  variable: "--font-mono",
+  display: "swap",
+});
+
+const SITE = "https://forge-ops.vercel.app";
+
 export const metadata: Metadata = {
-  title: "Forge",
-  description: "Personal AI operations platform",
+  metadataBase: new URL(SITE),
+  title: {
+    default: "Forge — the AI operations platform that repairs its own workflows",
+    template: "%s · Forge",
+  },
+  description:
+    "Forge is a self-hosted AI operations platform. Describe an automation in plain English; an agent layer generates it, validates it, deploys it to n8n, watches every run, and repairs failures on its own.",
+  keywords: [
+    "AI operations",
+    "workflow automation",
+    "n8n",
+    "LLM agents",
+    "self-healing workflows",
+    "FastAPI",
+    "Next.js",
+  ],
+  authors: [{ name: "Chanda Charan Reddy", url: "https://www.charanreddy.dev" }],
+  creator: "Chanda Charan Reddy",
+  openGraph: {
+    type: "website",
+    url: SITE,
+    title: "Forge — the AI operations platform that repairs its own workflows",
+    description:
+      "Describe an automation in plain English. An agent layer generates it, validates it, deploys it, and repairs failures on its own.",
+    siteName: "Forge",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Forge — AI operations platform",
+    description:
+      "Describe an automation in plain English. Forge's agent layer generates, deploys, monitors, and repairs it.",
+    creator: "@charanreddy_27",
+  },
+  robots: { index: true, follow: true },
 };
 
-const nav = [
-  { href: "/", label: "Workflows" },
-  { href: "/incidents", label: "Incidents" },
-  { href: "/costs", label: "Costs" },
-];
+export const viewport: Viewport = {
+  themeColor: "#0A0E15",
+  width: "device-width",
+  initialScale: 1,
+};
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body className="min-h-screen bg-zinc-950 text-zinc-100 antialiased">
-        <header className="border-b border-zinc-800">
-          <div className="mx-auto flex max-w-5xl items-center gap-8 px-6 py-4">
-            <Link href="/" className="text-lg font-semibold tracking-tight">
-              <span className="text-orange-500">⚒</span> Forge
-            </Link>
-            <nav className="flex gap-5 text-sm text-zinc-400">
-              {nav.map((item) => (
-                <Link key={item.href} href={item.href} className="hover:text-zinc-100">
-                  {item.label}
-                </Link>
-              ))}
-            </nav>
-          </div>
-        </header>
-        <main className="mx-auto max-w-5xl px-6 py-8">{children}</main>
-      </body>
+    <html lang="en" className={`${display.variable} ${sans.variable} ${mono.variable}`}>
+      <body className="min-h-screen font-sans">{children}</body>
     </html>
   );
 }

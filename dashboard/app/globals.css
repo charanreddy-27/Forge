@@ -1,3 +1,175 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/*
+ * Global base for the Forge surface. The marketing site and dashboard share
+ * this canvas: a deep steel background with an ember/cyan light source, subtle
+ * grain to kill banding, and motion that yields to prefers-reduced-motion.
+ */
+
+:root {
+  color-scheme: dark;
+  --ring: 255 106 43; /* ember-500, for focus rings */
+}
+
+@layer base {
+  * {
+    @apply border-white/5;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-base-950 text-ink antialiased;
+    font-feature-settings: "ss01", "cv01", "cv11";
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Ambient light source: a fixed mesh + faint grid behind everything. */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    background:
+      radial-gradient(60% 60% at 20% 0%, rgba(255, 106, 43, 0.16) 0%, transparent 60%),
+      radial-gradient(50% 50% at 90% 10%, rgba(34, 211, 238, 0.14) 0%, transparent 55%),
+      radial-gradient(60% 60% at 60% 100%, rgba(139, 92, 246, 0.12) 0%, transparent 60%);
+    opacity: 0.9;
+    pointer-events: none;
+  }
+
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background-image:
+      linear-gradient(rgba(148, 163, 184, 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(148, 163, 184, 0.06) 1px, transparent 1px);
+    background-size: 56px 56px;
+    -webkit-mask-image: radial-gradient(ellipse 100% 60% at 50% 0%, #000 20%, transparent 75%);
+    mask-image: radial-gradient(ellipse 100% 60% at 50% 0%, #000 20%, transparent 75%);
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
+  ::selection {
+    background: rgba(255, 106, 43, 0.28);
+    color: #fff;
+  }
+
+  :focus-visible {
+    outline: 2px solid rgb(var(--ring) / 0.9);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Slim, on-theme scrollbar */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.18);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(148, 163, 184, 0.32);
+    background-clip: content-box;
+  }
+}
+
+@layer components {
+  /* Glass surface used by cards, nav, and panels across the app. */
+  .glass {
+    @apply border border-white/10 bg-white/[0.04] backdrop-blur-xl;
+  }
+
+  .glass-strong {
+    @apply border border-white/10 bg-base-800/70 backdrop-blur-2xl;
+  }
+
+  /* Gradient text used sparingly on headline accents. */
+  .text-gradient-ember {
+    @apply bg-ember-grad bg-clip-text text-transparent;
+  }
+  .text-gradient-cool {
+    @apply bg-cool-grad bg-clip-text text-transparent;
+  }
+
+  /* Eyebrow / kicker label above section headings. */
+  .kicker {
+    @apply inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-xs font-medium uppercase tracking-[0.18em] text-ink-muted;
+  }
+
+  /* Primary and secondary call-to-action buttons. */
+  .btn {
+    @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition-all duration-200 focus-visible:outline-none;
+  }
+  .btn-primary {
+    @apply btn bg-ember-grad text-base-950 shadow-glow hover:brightness-110 hover:shadow-lift active:brightness-95;
+  }
+  .btn-ghost {
+    @apply btn border border-white/12 bg-white/[0.03] text-ink hover:border-white/25 hover:bg-white/[0.07];
+  }
+
+  /* Hairline gradient divider. */
+  .hairline {
+    @apply h-px w-full bg-gradient-to-r from-transparent via-white/12 to-transparent;
+  }
+
+  /* Form input surface used by contact + chat panels. */
+  .field {
+    @apply w-full rounded-xl border border-white/10 bg-base-950/60 px-4 py-2.5 text-sm text-ink placeholder:text-ink-faint transition-colors duration-200 focus:border-ember-500/60 focus:outline-none focus:ring-2 focus:ring-ember-500/20;
+  }
+}
+
+@layer utilities {
+  .bg-grid {
+    background-image:
+      linear-gradient(rgba(148, 163, 184, 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(148, 163, 184, 0.06) 1px, transparent 1px);
+    background-size: 56px 56px;
+  }
+  .animate-gradient {
+    background-size: 200% 200%;
+  }
+  /* Reveal-on-scroll baseline; JS toggles [data-shown]. */
+  .reveal {
+    opacity: 0;
+    transform: translateY(18px);
+    transition:
+      opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: opacity, transform;
+  }
+  .reveal[data-shown="true"] {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Honor the OS "reduce motion" setting everywhere. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
+}

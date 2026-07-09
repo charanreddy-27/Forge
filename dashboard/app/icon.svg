@@ -1,0 +1,17 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="ember" x1="12" y1="10" x2="52" y2="54" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FF7A3D"/>
+      <stop offset="0.5" stop-color="#FF6A2B"/>
+      <stop offset="1" stop-color="#FFB020"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="15" fill="#0A0E15"/>
+  <rect x="0.5" y="0.5" width="63" height="63" rx="14.5" stroke="#FF6A2B" stroke-opacity="0.35"/>
+  <!-- anvil body -->
+  <path d="M16 33 H48 C46 40 41 44 33 44 H31 V50 H37 V54 H23 V50 H27 V44 C21 43 17 39 16 33 Z" fill="url(#ember)"/>
+  <!-- anvil horn / top face -->
+  <rect x="18" y="27" width="28" height="6" rx="2" fill="url(#ember)"/>
+  <!-- spark -->
+  <path d="M40 12 L36 24 L42 22 L38 32 L48 20 L42 22 L46 12 Z" fill="#FFC24B"/>
+</svg>

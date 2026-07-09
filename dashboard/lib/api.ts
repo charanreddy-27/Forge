@@ -1,10 +1,27 @@
 // Server-side data access for the Forge agent-layer API.
 //
-// Server components call these directly (FORGE_API_URL — the compose-internal
-// hostname). Browser code never talks to the API directly; it goes through
-// the /api/forge/[...path] proxy route, so no CORS and no build-time URLs.
+// Server components call these directly. When FORGE_API_URL is set (e.g. the
+// docker-compose deployment) they hit the live agent layer. When it isn't — the
+// default on Vercel — the dashboard runs in demo mode and serves the seeded
+// dataset in ./demo.ts, so the live link is fully explorable with no backend.
+//
+// Even in live mode, a fetch failure falls back to demo data rather than 500ing
+// the page: a transient backend blip degrades to a realistic snapshot instead of
+// a broken screen.
+import {
+  demoCosts,
+  demoHealth,
+  demoIncidents,
+  demoRuns,
+  demoVersions,
+  demoWorkflow,
+  demoWorkflows,
+} from "./demo";
 
-const API_URL = process.env.FORGE_API_URL ?? "http://localhost:8000";
+const API_URL = process.env.FORGE_API_URL;
+
+/** True when there's no backend to talk to (or demo mode is forced). */
+export const isDemo = !API_URL || process.env.FORGE_DEMO === "1";
 
 export interface Workflow {
   id: string;
@@ -67,20 +84,30 @@ export interface CostSummary {
   by_service: { service: string; cost_usd: number; calls: number }[];
 }
 
-async function get<T>(path: string): Promise<T> {
-  const response = await fetch(`${API_URL}${path}`, { cache: "no-store" });
-  if (!response.ok) {
-    throw new Error(`GET ${path} → ${response.status}`);
+/**
+ * Fetch `path` from the live API, falling back to `fallback()` when there's no
+ * backend or the request fails. Keeps the dashboard resilient by design.
+ */
+async function get<T>(path: string, fallback: () => T): Promise<T> {
+  if (isDemo) return fallback();
+  try {
+    const response = await fetch(`${API_URL}${path}`, { cache: "no-store" });
+    if (!response.ok) throw new Error(`GET ${path} → ${response.status}`);
+    return (await response.json()) as T;
+  } catch {
+    return fallback();
   }
-  return response.json() as Promise<T>;
 }
 
-export const fetchWorkflows = () => get<Workflow[]>("/workflows");
-export const fetchWorkflow = (id: string) => get<Workflow>(`/workflows/${id}`);
-export const fetchHealth = (id: string) => get<WorkflowHealth>(`/workflows/${id}/health`);
-export const fetchRuns = (id: string) => get<Run[]>(`/workflows/${id}/runs`);
-export const fetchVersions = (id: string) => get<WorkflowVersion[]>(`/workflows/${id}/versions`);
-export const fetchIncidents = () => get<Incident[]>("/incidents");
-export const fetchCosts = (days = 14) => get<CostSummary>(`/costs/summary?days=${days}`);
+export const fetchWorkflows = () => get<Workflow[]>("/workflows", demoWorkflows);
+export const fetchWorkflow = (id: string) => get<Workflow>(`/workflows/${id}`, () => demoWorkflow(id));
+export const fetchHealth = (id: string) =>
+  get<WorkflowHealth>(`/workflows/${id}/health`, () => demoHealth(id));
+export const fetchRuns = (id: string) => get<Run[]>(`/workflows/${id}/runs`, () => demoRuns(id));
+export const fetchVersions = (id: string) =>
+  get<WorkflowVersion[]>(`/workflows/${id}/versions`, () => demoVersions(id));
+export const fetchIncidents = () => get<Incident[]>("/incidents", demoIncidents);
+export const fetchCosts = (days = 14) =>
+  get<CostSummary>(`/costs/summary?days=${days}`, () => demoCosts(days));
 
-export const apiUrl = API_URL;
+export const apiUrl = API_URL ?? "";
