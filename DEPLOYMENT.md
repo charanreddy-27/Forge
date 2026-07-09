@@ -32,8 +32,11 @@ git push
    *(Project → Settings → General → Root Directory → `dashboard`.)*
 3. Framework preset: **Next.js** (auto-detected). Leave build/output settings at their defaults:
    - Build command: `next build` (default)
-   - Output directory: `.next` (default)
+   - Output directory: `.next` (default). Do **not** point this at `public`.
    - Install command: `npm install` (default)
+
+   The dashboard also ships a `dashboard/vercel.json` file that pins the correct Next.js build
+   output, so the deployment stays aligned even if project settings drift.
 
 ### 3. Environment variables — none required
 
