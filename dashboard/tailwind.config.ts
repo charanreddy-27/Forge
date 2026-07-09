@@ -65,6 +65,16 @@ const config: Config = {
         sans: ["var(--font-sans)", "ui-sans-serif", "system-ui", "sans-serif"],
         mono: ["var(--font-mono)", "ui-monospace", "SFMono-Regular", "monospace"],
       },
+      // Extra fine-grained opacity steps used across the fire+steel surface
+      // (e.g. border-white/8, /12). Registering them here makes the bare slash
+      // utilities valid in both markup and @apply.
+      opacity: {
+        6: "0.06",
+        8: "0.08",
+        12: "0.12",
+        14: "0.14",
+        16: "0.16",
+      },
       borderRadius: {
         "4xl": "2rem",
       },

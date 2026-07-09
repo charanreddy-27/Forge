@@ -1,10 +1,21 @@
 // Thin proxy so browser code reaches the agent layer without CORS or
 // build-time API URLs: /api/forge/<path> → ${FORGE_API_URL}/<path>.
+//
+// With no FORGE_API_URL (the Vercel/demo case) there's nothing to proxy to, so
+// we return a benign 503 instead of throwing — the client components already
+// simulate their own responses in demo mode and never call this.
 import { NextRequest, NextResponse } from "next/server";
 
-const API_URL = process.env.FORGE_API_URL ?? "http://localhost:8000";
+const API_URL = process.env.FORGE_API_URL;
 
 async function forward(request: NextRequest, path: string[]): Promise<NextResponse> {
+  if (!API_URL) {
+    return NextResponse.json(
+      { detail: "Forge is running in demo mode — no backend is configured." },
+      { status: 503 },
+    );
+  }
+
   const target = `${API_URL}/${path.join("/")}${request.nextUrl.search}`;
   const body = ["GET", "HEAD"].includes(request.method) ? undefined : await request.text();
 

@@ -33,10 +33,12 @@ export default function HeroCanvas() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    if (canvasRef.current === null) return;
+    // Non-null aliases so the nested render closures don't re-widen to null.
+    const canvas: HTMLCanvasElement = canvasRef.current;
+    const maybeCtx = canvas.getContext("2d");
+    if (maybeCtx === null) return;
+    const ctx: CanvasRenderingContext2D = maybeCtx;
 
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const parent = canvas.parentElement as HTMLElement;

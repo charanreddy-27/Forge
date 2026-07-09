@@ -22,7 +22,9 @@ const mono = JetBrains_Mono({
   display: "swap",
 });
 
-const SITE = "https://forge-ops.vercel.app";
+// Set NEXT_PUBLIC_SITE_URL in Vercel to your real domain so OG/Twitter cards
+// resolve to absolute URLs. Falls back to a sensible default.
+const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://forge-ops.vercel.app";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE),
